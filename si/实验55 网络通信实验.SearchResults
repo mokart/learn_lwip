@@ -1,0 +1,316 @@
+---- ip_addr_t Matches (320 in 55 files) ----
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t   netconn_getaddr(struct netconn *conn, ip_addr_t *addr,
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t   netconn_bind(struct netconn *conn, ip_addr_t *addr, u16_t port);
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t   netconn_connect(struct netconn *conn, ip_addr_t *addr, u16_t port);
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                       ip_addr_t *addr, u16_t port);
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t   netconn_join_leave_group(struct netconn *conn, ip_addr_t *multiaddr,
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *netif_addr, enum netconn_igmp join_or_leave);
+Api.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t   netconn_gethostbyname(const char *name, ip_addr_t *addr);
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):netconn_getaddr(struct netconn *conn, ip_addr_t *addr, u16_t *port, u8_t local)
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):netconn_bind(struct netconn *conn, ip_addr_t *addr, u16_t port)
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):netconn_connect(struct netconn *conn, ip_addr_t *addr, u16_t port)
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):netconn_sendto(struct netconn *conn, struct netbuf *buf, ip_addr_t *addr, u16_t port)
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                         ip_addr_t *multiaddr,
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                         ip_addr_t *netif_addr,
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api): * @param addr a preallocated ip_addr_t where to store the resolved IP address
+Api_lib.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):netconn_gethostbyname(const char *name, ip_addr_t *addr)
+Api_msg.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):    ip_addr_t *addr)
+Api_msg.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):   ip_addr_t *addr, u16_t port)
+Api_msg.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):do_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+Api_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *ipaddr;
+Api_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *ipaddr;
+Api_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *multiaddr;
+Api_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *netif_addr;
+Api_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t *addr;
+Autoip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):static void autoip_create_addr(struct netif *netif, ip_addr_t *ipaddr);
+Autoip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):autoip_create_addr(struct netif *netif, ip_addr_t *ipaddr)
+Autoip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t sn_mask, gw_addr;
+Autoip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):    ip_addr_t sipaddr, dipaddr;
+Autoip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):  ip_addr_t llipaddr;       /* the currently selected, probed, announced or used LL IP-Address */
+Dhcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):static void dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port);
+Dhcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):    ip_addr_t dns_addr;
+Dhcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):void dhcp_arp_reply(struct netif *netif, ip_addr_t *addr)
+Dhcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t sn_mask, gw_addr;
+Dhcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dhcp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port)
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t server_ip_addr; /* dhcp server address that offered this lease */
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t offered_ip_addr;
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t offered_sn_mask;
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t offered_gw_addr;
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t offered_si_addr;
+Dhcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void dhcp_arp_reply(struct netif *netif, ip_addr_t *addr);
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t ipaddr;
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):static void dns_recv(void *s, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port);
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):static ip_addr_t              dns_servers[DNS_MAX_SERVERS];
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t dnsserver;
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dns_setserver(u8_t numdns, ip_addr_t *dnsserver)
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):ip_addr_t
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dns_local_removehost(const char *hostname, const ip_addr_t *addr)
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dns_local_addhost(const char *hostname, const ip_addr_t *addr)
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core): * @return the hostname's IP address, as u32_t (instead of ip_addr_t to
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port)
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):             (ans.len == PP_HTONS(sizeof(ip_addr_t))) ) {
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):            SMEMCPY(&(pEntry->ipaddr), (pHostname+SIZEOF_DNS_ANSWER), sizeof(ip_addr_t));
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core): * @param addr pointer to a ip_addr_t where to store the address if it is already
+Dns.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):dns_gethostbyname(const char *hostname, ip_addr_t *addr, dns_found_callback found,
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t addr;
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip): * @param ipaddr pointer to an ip_addr_t containing the IP address of the hostname,
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):typedef void (*dns_found_callback)(const char *name, ip_addr_t *ipaddr, void *callback_arg);
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void           dns_setserver(u8_t numdns, ip_addr_t *dnsserver);
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):ip_addr_t      dns_getserver(u8_t numdns);
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t          dns_gethostbyname(const char *hostname, ip_addr_t *addr,
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):int            dns_local_removehost(const char *hostname, const ip_addr_t *addr);
+Dns.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t          dns_local_addhost(const char *hostname, const ip_addr_t *addr);
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):  ip_addr_t ipaddr;
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_find_entry(ip_addr_t *ipaddr, u8_t flags)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_update_arp_entry(struct netif *netif, ip_addr_t *ipaddr, struct eth_addr *ethaddr, u8_t flags)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_add_static_entry(ip_addr_t *ipaddr, struct eth_addr *ethaddr)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_remove_static_entry(ip_addr_t *ipaddr)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_find_addr(struct netif *netif, ip_addr_t *ipaddr,
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):         struct eth_addr **eth_ret, ip_addr_t **ip_ret)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):  ip_addr_t iphdr_src;
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):  ip_addr_t sipaddr, dipaddr;
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):      (hdr->protolen != sizeof(ip_addr_t)) ||
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_output(struct netif *netif, struct pbuf *q, ip_addr_t *ipaddr)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):  ip_addr_t *dst_addr = ipaddr;
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_query(struct netif *netif, ip_addr_t *ipaddr, struct pbuf *q)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):           const struct eth_addr *hwsrc_addr, const ip_addr_t *ipsrc_addr,
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):           const struct eth_addr *hwdst_addr, const ip_addr_t *ipdst_addr,
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):  hdr->protolen = sizeof(ip_addr_t);
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):etharp_request(struct netif *netif, ip_addr_t *ipaddr)
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):s8_t etharp_find_addr(struct netif *netif, ip_addr_t *ipaddr,
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):         struct eth_addr **eth_ret, ip_addr_t **ip_ret);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):err_t etharp_output(struct netif *netif, struct pbuf *q, ip_addr_t *ipaddr);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):err_t etharp_query(struct netif *netif, ip_addr_t *ipaddr, struct pbuf *q);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):err_t etharp_request(struct netif *netif, ip_addr_t *ipaddr);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):err_t etharp_add_static_entry(ip_addr_t *ipaddr, struct eth_addr *ethaddr);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):err_t etharp_remove_static_entry(ip_addr_t *ipaddr);
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):                 const struct eth_addr *hwsrc_addr, const ip_addr_t *ipsrc_addr,
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\netif):                 const struct eth_addr *hwdst_addr, const ip_addr_t *ipdst_addr,
+Icmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t iphdr_src;
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):static struct igmp_group *igmp_lookup_group(struct netif *ifp, ip_addr_t *addr);
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):static err_t  igmp_ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest, struct netif *netif);
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):static ip_addr_t     allsystems;
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):static ip_addr_t     allrouters;
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_lookfor_group(struct netif *ifp, ip_addr_t *addr)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_lookup_group(struct netif *ifp, ip_addr_t *addr)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_input(struct pbuf *p, struct netif *inp, ip_addr_t *dest)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):           ip_addr_t groupaddr;
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_leavegroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):igmp_ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest, struct netif *netif)
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t   src  = *IP_ADDR_ANY;
+Igmp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t*  dest = NULL;
+Igmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):  ip_addr_t          group_address;
+Igmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):struct igmp_group *igmp_lookfor_group(struct netif *ifp, ip_addr_t *addr);
+Igmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):void   igmp_input(struct pbuf *p, struct netif *inp, ip_addr_t *dest);
+Igmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t  igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr);
+Igmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t  igmp_leavegroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr);
+Inet.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):/* ATTENTION: the next define only works because both s_addr and ip_addr_t are an u32_t effectively! */
+Inet.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define inet_addr_to_ipaddr_p(target_ipaddr_p, source_inaddr)   ((target_ipaddr_p) = (ip_addr_t*)&((source_inaddr)->s_addr))
+Inet.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define inet_aton(cp, addr)   ipaddr_aton(cp, (ip_addr_t*)addr)
+Inet.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define inet_ntoa(addr)       ipaddr_ntoa((ip_addr_t*)&(addr))
+Inet.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define inet_ntoa_r(addr, buf, buflen) ipaddr_ntoa_r((ip_addr_t*)&(addr), buf, buflen)
+Inet_chksum.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):       ip_addr_t *src, ip_addr_t *dest,
+Inet_chksum.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):       ip_addr_t *src, ip_addr_t *dest,
+Inet_chksum.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):       ip_addr_t *src, ip_addr_t *dest,
+Inet_chksum.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):       ip_addr_t *src, ip_addr_t *dest,
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_addr_t current_iphdr_src;
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_addr_t current_iphdr_dest;
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_route(ip_addr_t *dest)
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  /* copy IP addresses to aligned ip_addr_t */
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t dest_addr;
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_output(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_output_hinted(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):  ip_addr_t local_ip; \
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):  ip_addr_t remote_ip; \
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):extern ip_addr_t current_iphdr_src;
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):extern ip_addr_t current_iphdr_dest;
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):struct netif *ip_route(ip_addr_t *dest);
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t ip_output(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t ip_output_hinted(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):const ip_addr_t ip_addr_any = { IPADDR_ANY };
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):const ip_addr_t ip_addr_broadcast = { IPADDR_BROADCAST };
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t ipaddr;
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):  ip_addr_t val;
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ipaddr_aton(const char *cp, ip_addr_t *addr)
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ipaddr_ntoa(const ip_addr_t *addr)
+Ip_addr.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):char *ipaddr_ntoa_r(const ip_addr_t *addr, char *buf, int buflen)
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):/* This is the aligned version of ip_addr_t,
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):/* This is the packed version of ip_addr_t,
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):/** ip_addr_t uses a struct for convenience only, so that the same defines can
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip): * operate both on ip_addr_t as well as on ip_addr_p_t. */
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):typedef struct ip_addr ip_addr_t;
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):extern const ip_addr_t ip_addr_any;
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):extern const ip_addr_t ip_addr_broadcast;
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define IP_ADDR_ANY         ((ip_addr_t *)&ip_addr_any)
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define IP_ADDR_BROADCAST   ((ip_addr_t *)&ip_addr_broadcast)
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):#define IPADDR2_COPY(dest, src) SMEMCPY(dest, src, sizeof(ip_addr_t))
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):int ipaddr_aton(const char *cp, ip_addr_t *addr);
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):char *ipaddr_ntoa(const ip_addr_t *addr);
+Ip_addr.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):char *ipaddr_ntoa_r(const ip_addr_t *addr, char *buf, int buflen);
+Ip_frag.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\ipv4):ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
+Ip_frag.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\ipv4\lwip):err_t ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest);
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):void snmp_insert_arpidx_tree(struct netif *ni, ip_addr_t *ip)
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):void snmp_delete_arpidx_tree(struct netif *ni, ip_addr_t *ip)
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t dst;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t dst;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t* ipaddr_ret;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t ip;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t ip;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t dest;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t* ipaddr_ret;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t ip;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t lip, rip;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t ip;
+Mib2.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):          ip_addr_t *dst = (ip_addr_t*)value;
+Mib_structs.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):snmp_oidtoip(s32_t *ident, ip_addr_t *ip)
+Mib_structs.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):snmp_iptooid(ip_addr_t *ip, s32_t *ident)
+Msg_in.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):static void snmp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port);
+Msg_in.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):snmp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t port)
+Msg_out.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t dip;
+Msg_out.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):snmp_trap_dst_ip_set(u8_t dst_idx, ip_addr_t *dst)
+Msg_out.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core\snmp):  ip_addr_t dst_ip;
+Netbuf.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t addr;
+Netbuf.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t toaddr;
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t *addr_list[2];
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t addr;
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t addr;
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  HOSTENT_STORAGE ip_addr_t s_hostent_addr;
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  HOSTENT_STORAGE ip_addr_t *s_phostent_addr[2];
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  s_hostent.h_length = sizeof(ip_addr_t);
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):      LWIP_DEBUGF(DNS_DEBUG, ("hostent.h_addr_list[%i]-> == %s\n", idx, ip_ntoa((ip_addr_t*)s_hostent.h_addr_list[idx])));
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ret->h_length = sizeof(ip_addr_t);
+Netdb.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t addr;
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t loop_ipaddr, loop_netmask, loop_gw;
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *gw, void *state, netif_init_fn init, netif_input_fn input)
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):netif_set_addr(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):    ip_addr_t *gw)
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):netif_set_ipaddr(struct netif *netif, ip_addr_t *ipaddr)
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):netif_set_gw(struct netif *netif, ip_addr_t *gw)
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):netif_set_netmask(struct netif *netif, ip_addr_t *netmask)
+Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):       ip_addr_t *ipaddr)
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):       ip_addr_t *ipaddr);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):       ip_addr_t *group, u8_t action);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t ip_addr;                     //网络接口的ip地址
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t netmask;                     //子网掩码
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t gw;                          //网关地址
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):struct netif *netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *gw, void *state, netif_init_fn init, netif_input_fn input);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):netif_set_addr(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *gw);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void netif_set_ipaddr(struct netif *netif, ip_addr_t *ipaddr);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void netif_set_netmask(struct netif *netif, ip_addr_t *netmask);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void netif_set_gw(struct netif *netif, ip_addr_t *gw);
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t netif_loop_output(struct netif *netif, struct pbuf *p, ip_addr_t *dest_ip);
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                   ip_addr_t *ipaddr,
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                   ip_addr_t *netmask,
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                   ip_addr_t *gw,
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                        ip_addr_t *ipaddr,
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                        ip_addr_t *netmask,
+Netifapi.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):                        ip_addr_t *gw)
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *ipaddr;
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *netmask;
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):      ip_addr_t *gw;
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *ipaddr,
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *netmask,
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *gw,
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *ipaddr,
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *netmask,
+Netifapi.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *gw );
+Ppp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif\ppp):pppifOutput(struct netif *netif, struct pbuf *pb, ip_addr_t *ipaddr)
+Ppp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif\ppp):  ip_addr_t our_ipaddr, his_ipaddr, netmask, dns1, dns2;
+Raw.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):raw_bind(struct raw_pcb *pcb, ip_addr_t *ipaddr)
+Raw.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):raw_connect(struct raw_pcb *pcb, ip_addr_t *ipaddr)
+Raw.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):raw_sendto(struct raw_pcb *pcb, struct pbuf *p, ip_addr_t *ipaddr)
+Raw.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *src_ip;
+Raw.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):    ip_addr_t *addr);
+Raw.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            raw_bind       (struct raw_pcb *pcb, ip_addr_t *ipaddr);
+Raw.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            raw_connect    (struct raw_pcb *pcb, ip_addr_t *ipaddr);
+Raw.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            raw_sendto     (struct raw_pcb *pcb, struct pbuf *p, ip_addr_t *ipaddr);
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):- err_t tcp_bind(struct tcp_pcb *pcb, ip_addr_t *ipaddr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):- err_t tcp_connect(struct tcp_pcb *pcb, ip_addr_t *ipaddr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):- err_t udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):- err_t udp_connect(struct udp_pcb *pcb, ip_addr_t *ipaddr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):                                         ip_addr_t *addr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):- netif_add(struct netif *netif, ip_addr_t *ipaddr,
+Rawapi.txt (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\doc):            ip_addr_t *netmask, ip_addr_t *gw,
+Slipif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\netif):slipif_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr)
+Snmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void snmp_insert_arpidx_tree(struct netif *ni, ip_addr_t *ip);
+Snmp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void snmp_delete_arpidx_tree(struct netif *ni, ip_addr_t *ip);
+Snmp_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t sip;
+Snmp_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t dip;
+Snmp_msg.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void snmp_trap_dst_ip_set(u8_t dst_idx, ip_addr_t *dst);
+Snmp_structs.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void snmp_oidtoip(s32_t *ident, ip_addr_t *ip);
+Snmp_structs.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):void snmp_iptooid(ip_addr_t *ip, s32_t *ident);
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t naddr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t local_addr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):    ip_addr_t remote_addr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t        *addr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):      ip_addr_t fromaddr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):    ip_addr_t *remote_addr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):  ip_addr_t naddr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):        ip_addr_t if_addr;
+Sockets.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\api):        ip_addr_t multi_addr;
+Tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):tcp_bind(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
+Tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):tcp_connect(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port,
+Tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):tcp_eff_send_mss(u16_t sendmss, ip_addr_t *addr)
+Tcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            tcp_bind    (struct tcp_pcb *pcb, ip_addr_t *ipaddr,
+Tcp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            tcp_connect (struct tcp_pcb *pcb, ip_addr_t *ipaddr,
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):tcp_create_segment_wnd(ip_addr_t* src_ip, ip_addr_t* dst_ip,
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):tcp_create_segment(ip_addr_t* src_ip, ip_addr_t* dst_ip,
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):tcp_set_state(struct tcp_pcb* pcb, enum tcp_state state, ip_addr_t* local_ip,
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):                   ip_addr_t* remote_ip, u16_t local_port, u16_t remote_port)
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):       ip_addr_t *ipaddr)
+Tcp_helper.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):                         ip_addr_t *ip_addr, ip_addr_t *netmask)
+Tcp_helper.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):struct pbuf* tcp_create_segment(ip_addr_t* src_ip, ip_addr_t* dst_ip,
+Tcp_helper.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):void tcp_set_state(struct tcp_pcb* pcb, enum tcp_state state, ip_addr_t* local_ip,
+Tcp_helper.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):                   ip_addr_t* remote_ip, u16_t local_port, u16_t remote_port);
+Tcp_helper.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):                         ip_addr_t *ip_addr, ip_addr_t *netmask);
+Tcp_impl.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):       ip_addr_t *local_ip, ip_addr_t *remote_ip,
+Tcp_impl.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):u16_t tcp_eff_send_mss(u16_t sendmss, ip_addr_t *addr);
+Tcp_out.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *local_ip, ip_addr_t *remote_ip,
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):static ip_addr_t test_ipaddr, test_netmask, test_gw;
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):create_arp_response(ip_addr_t *adr)
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):  etharphdr->protolen = sizeof(ip_addr_t);
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):  SMEMCPY(&etharphdr->sipaddr, adr, sizeof(ip_addr_t));
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):  SMEMCPY(&etharphdr->dipaddr, &test_ipaddr, sizeof(ip_addr_t));
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):  ip_addr_t *unused_ipaddr;
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\etharp):    ip_addr_t adrs[ARP_TABLE_SIZE + 2];
+Test_tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip, netmask;
+Test_tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip, netmask;
+Test_tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip, netmask;
+Test_tcp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip, netmask;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Test_tcp_oos.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\test\unit\tcp):  ip_addr_t remote_ip, local_ip;
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *dst_ip, u16_t dst_port)
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *dst_ip, u16_t dst_port, struct netif *netif)
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):  ip_addr_t *src_ip;
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
+Udp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\core):udp_connect(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):    ip_addr_t *addr, u16_t port);
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):  ip_addr_t multicast_ip;
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            udp_bind       (struct udp_pcb *pcb, ip_addr_t *ipaddr,
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):err_t            udp_connect    (struct udp_pcb *pcb, ip_addr_t *ipaddr,
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *dst_ip, u16_t dst_port,
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *dst_ip, u16_t dst_port);
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *dst_ip, u16_t dst_port,
+Udp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验\lwip\lwip-1.4.1\src\include\lwip):                                 ip_addr_t *dst_ip, u16_t dst_port,
