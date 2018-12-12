@@ -107,6 +107,8 @@ err_t ethernetif_input(struct netif *netif)
 	} 
 	return err;
 }
+
+
 //使用low_level_init()函数来初始化网络
 //netif:网卡结构体指针
 //返回值:ERR_OK,正常
@@ -119,22 +121,9 @@ err_t ethernetif_init(struct netif *netif)
 #endif 
 	netif->name[0]=IFNAME0; 	//初始化变量netif的name字段
 	netif->name[1]=IFNAME1; 	//在文件外定义这里不用关心具体值
-	netif->output=etharp_output;//IP层发送数据包函数
-	netif->linkoutput=low_level_output;//ARP模块发送数据包函数
+	netif->output=etharp_output;//IP层发送数据包函数，这里使用ARP的相关函数
+	netif->linkoutput=low_level_output;//ARP模块发送数据包函数 注册以太网数据帧输出函数
 	low_level_init(netif); 		//底层硬件初始化函数
 	return ERR_OK;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 

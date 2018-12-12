@@ -621,13 +621,14 @@ void netif_set_link_callback(struct netif *netif, netif_status_callback_fn link_
  * @return ERR_OK if the packet has been sent
  *         ERR_MEM if the pbuf used to copy the packet couldn't be allocated
  */
+ //将数据包p挂接到netif结构的loop_first链表上
 err_t
 netif_loop_output(struct netif *netif, struct pbuf *p,
        ip_addr_t *ipaddr)
 {
-  struct pbuf *r;
+  struct pbuf *r;                  //pbuf链表首部
   err_t err;
-  struct pbuf *last;
+  struct pbuf *last;               //pbuf链表尾部
 #if LWIP_LOOPBACK_MAX_PBUFS
   u8_t clen = 0;
 #endif /* LWIP_LOOPBACK_MAX_PBUFS */
@@ -640,12 +641,14 @@ netif_loop_output(struct netif *netif, struct pbuf *p,
   struct netif *stats_if = netif;
 #endif /* LWIP_HAVE_LOOPIF */
 #endif /* LWIP_SNMP */
-  SYS_ARCH_DECL_PROTECT(lev);
+  SYS_ARCH_DECL_PROTECT(lev);      //申请临界保护变量
   LWIP_UNUSED_ARG(ipaddr);
 
   /* Allocate a new pbuf */
+
+  //申请一个新的pbuf链表，用于保存要发送的数据包
   r = pbuf_alloc(PBUF_LINK, p->tot_len, PBUF_RAM);
-  if (r == NULL) {
+  if (r == NULL) {                  //分配失败，返回内存错误
     LINK_STATS_INC(link.memerr);
     LINK_STATS_INC(link.drop);
     snmp_inc_ifoutdiscards(stats_if);
@@ -666,7 +669,8 @@ netif_loop_output(struct netif *netif, struct pbuf *p,
 #endif /* LWIP_LOOPBACK_MAX_PBUFS */
 
   /* Copy the whole pbuf queue p into the single pbuf r */
-  if ((err = pbuf_copy(r, p)) != ERR_OK) {
+  //将要发送的数据包拷贝到r中
+  if ((err = pbuf_copy(r, p)) != ERR_OK) {  //拷贝失败，则释放r，返回错误代码
     pbuf_free(r);
     LINK_STATS_INC(link.memerr);
     LINK_STATS_INC(link.drop);
@@ -678,29 +682,31 @@ netif_loop_output(struct netif *netif, struct pbuf *p,
      netif_poll(). */
 
   /* let last point to the last pbuf in chain r */
+  //设置last指向r中的最后一个pbuf
   for (last = r; last->next != NULL; last = last->next);
 
-  SYS_ARCH_PROTECT(lev);
-  if(netif->loop_first != NULL) {
+  SYS_ARCH_PROTECT(lev);                          //进入临界区
+  if(netif->loop_first != NULL) {                 //如果loop_first中有数据包
     LWIP_ASSERT("if first != NULL, last must also be != NULL", netif->loop_last != NULL);
-    netif->loop_last->next = r;
-    netif->loop_last = last;
-  } else {
-    netif->loop_first = r;
-    netif->loop_last = last;
+    netif->loop_last->next = r;                   //将r放在链表的尾部
+    netif->loop_last = last;                      //调整loop_last指针
+  } else {                                        //如果loop_first中没有数据包
+    netif->loop_first = r;                        //设置loop_first字段
+    netif->loop_last = last;                      //设置loop_last字段
   }
-  SYS_ARCH_UNPROTECT(lev);
+  SYS_ARCH_UNPROTECT(lev);                        //退出临界区
 
   LINK_STATS_INC(link.xmit);
   snmp_add_ifoutoctets(stats_if, p->tot_len);
   snmp_inc_ifoutucastpkts(stats_if);
 
-#if LWIP_NETIF_LOOPBACK_MULTITHREADING
+//下面这句在有操作系统模拟层是有效，这里我们没有用到，但是还是列出来
+#if LWIP_NETIF_LOOPBACK_MULTITHREADING            //初始化一个定时事件
   /* For multithreading environment, schedule a call to netif_poll */
-  tcpip_callback((tcpip_callback_fn)netif_poll, netif);
+  tcpip_callback((tcpip_callback_fn)netif_poll, netif);//时间到后，自动调用函数netif_poll
 #endif /* LWIP_NETIF_LOOPBACK_MULTITHREADING */
 
-  return ERR_OK;
+  return ERR_OK;                                        //返回发送状态
 }
 
 /**
@@ -709,8 +715,9 @@ netif_loop_output(struct netif *netif, struct pbuf *p,
  * netif_loop_output() are put on a list that is passed to netif->input() by
  * netif_poll().
  */
+ //将网络接口结构netif上的所有数据包递交给IP层
 void
-netif_poll(struct netif *netif)
+netif_poll(struct netif *netif)                        //netif为对应的网络接口结构
 {
   struct pbuf *in;
   /* If we have a loopif, SNMP counters are adjusted for it,
@@ -722,14 +729,14 @@ netif_poll(struct netif *netif)
   struct netif *stats_if = netif;
 #endif /* LWIP_HAVE_LOOPIF */
 #endif /* LWIP_SNMP */
-  SYS_ARCH_DECL_PROTECT(lev);
+  SYS_ARCH_DECL_PROTECT(lev);                    //申请临界保护变量
 
   do {
     /* Get a packet from the list. With SYS_LIGHTWEIGHT_PROT=1, this is protected */
-    SYS_ARCH_PROTECT(lev);
-    in = netif->loop_first;
-    if (in != NULL) {
-      struct pbuf *in_end = in;
+    SYS_ARCH_PROTECT(lev);                       //进入临界区
+    in = netif->loop_first;                      //获得loop_first指向的第一个pbuf
+    if (in != NULL) {                            //pbuf有效，则进行数据包递交工作
+      struct pbuf *in_end = in;                  //定义in_end,用于指向数据包的最后一个pbuf
 #if LWIP_LOOPBACK_MAX_PBUFS
       u8_t clen = pbuf_clen(in);
       /* adjust the number of pbufs on queue */
@@ -737,37 +744,38 @@ netif_poll(struct netif *netif)
         ((netif->loop_cnt_current - clen) < netif->loop_cnt_current));
       netif->loop_cnt_current -= clen;
 #endif /* LWIP_LOOPBACK_MAX_PBUFS */
-      while (in_end->len != in_end->tot_len) {
+
+      while (in_end->len != in_end->tot_len) {   //while语句，找到数据包最后一个pbuf
         LWIP_ASSERT("bogus pbuf: len != tot_len but next == NULL!", in_end->next != NULL);
         in_end = in_end->next;
       }
       /* 'in_end' now points to the last pbuf from 'in' */
-      if (in_end == netif->loop_last) {
+      if (in_end == netif->loop_last) {         //如果整个loop_first只有一个数据包
         /* this was the last pbuf in the list */
-        netif->loop_first = netif->loop_last = NULL;
-      } else {
+        netif->loop_first = netif->loop_last = NULL; //则指针清零0
+      } else {                                  //否则记录下一个数据包的起始pbuf
         /* pop the pbuf off the list */
         netif->loop_first = in_end->next;
         LWIP_ASSERT("should not be null since first != last!", netif->loop_first != NULL);
       }
       /* De-queue the pbuf from its successors on the 'loop_' list. */
-      in_end->next = NULL;
+      in_end->next = NULL;                        //带递交数据包的最后一个pbuf指向空
     }
-    SYS_ARCH_UNPROTECT(lev);
+    SYS_ARCH_UNPROTECT(lev);                      //退出临界区
 
-    if (in != NULL) {
+    if (in != NULL) {                             //如果得到了一个非空数据包，则递交给IP层
       LINK_STATS_INC(link.recv);
       snmp_add_ifinoctets(stats_if, in->tot_len);
       snmp_inc_ifinucastpkts(stats_if);
       /* loopback packets are always IP packets! */
-      if (ip_input(in, netif) != ERR_OK) {
+      if (ip_input(in, netif) != ERR_OK) {        //调用IP层输入函数，处理数据包
         pbuf_free(in);
       }
       /* Don't reference the packet any more! */
-      in = NULL;
+      in = NULL;                                  //清空in
     }
   /* go on while there is a packet on the list */
-  } while (netif->loop_first != NULL);
+  } while (netif->loop_first != NULL);      //loop_first中还有数据包，则继续递交
 }
 
 #if !LWIP_NETIF_LOOPBACK_MULTITHREADING
