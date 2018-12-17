@@ -1,9 +1,7 @@
----- loopif Matches (8 in 3 files) ----
-Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core\ipv4):  /* don't fragment if interface has mtu set to 0 [loopif] */
-Ip.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core\ipv4):  /* don't fragment if interface has mtu set to 0 [loopif] */
-Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core): * @param netif the lwip network interface structure for this loopif
-Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core): * @return ERR_OK if the loopif is initialized
-Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core): * Send an IP packet to be received on the same netif (loopif-like).
-Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core):  /* If we have a loopif, SNMP counters are adjusted for it,
-Netif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\core):  /* If we have a loopif, SNMP counters are adjusted for it,
-Opt.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\include\lwip): * LWIP_HAVE_LOOPIF==1: Support loop interface (127.0.0.1) and loopif.c
+---- etharp_output Matches (6 in 5 files) ----
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\netif):etharp_output(struct netif *netif, struct pbuf *q, ip_addr_t *ipaddr)
+Etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\netif):      ("etharp_output: could not allocate room for header.\n"));
+Etharp.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\include\netif):err_t etharp_output(struct netif *netif, struct pbuf *q, ip_addr_t *ipaddr);
+Ethernetif.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\netif):	netif->output=etharp_output;//IP层发送数据包函数，这里使用ARP的相关函数
+Netif.h (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\src\include\lwip): * shall be sent. For ethernet netif, set this to 'etharp_output' and set
+Test_etharp.c (d:\q_work\data_for_learn\lwip\实验55 网络通信实验-添加注释-git\lwip\lwip-1.4.1\test\unit\etharp):  netif->output = etharp_output;

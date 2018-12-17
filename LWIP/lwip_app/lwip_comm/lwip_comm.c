@@ -162,14 +162,16 @@ void lwip_pkt_handle(void)
 //LWIP轮询任务
 void lwip_periodic_handle()
 {
+
 #if LWIP_TCP
-	//每250ms调用一次tcp_tmr()函数
+  //每250ms调用一次tcp_tmr()函数
   if (lwip_localtime - TCPTimer >= TCP_TMR_INTERVAL)
   {
     TCPTimer =  lwip_localtime;
     tcp_tmr();
   }
 #endif
+
   //ARP每5s周期性调用一次
   if ((lwip_localtime - ARPTimer) >= ARP_TMR_INTERVAL)
   {

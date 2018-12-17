@@ -49,17 +49,19 @@ extern "C" {
 #endif
 
 #ifndef ETHARP_HWADDR_LEN
-#define ETHARP_HWADDR_LEN     6
+#define ETHARP_HWADDR_LEN     6          //以太网物理地址长度
 #endif
 
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
 #endif
-PACK_STRUCT_BEGIN
-struct eth_addr {
+
+PACK_STRUCT_BEGIN                       //我们移植时实现的结构体封装宏
+struct eth_addr {                       //定义以太网MAC地址结构体eth_addr,禁止编译器自对齐
   PACK_STRUCT_FIELD(u8_t addr[ETHARP_HWADDR_LEN]);
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
+	
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
@@ -67,21 +69,26 @@ PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
 #endif
-PACK_STRUCT_BEGIN
+
+
+PACK_STRUCT_BEGIN                                 //定义以太网数据帧首部结构体eth_hdr,禁止编译器自对齐
 /** Ethernet header */
 struct eth_hdr {
 #if ETH_PAD_SIZE
-  PACK_STRUCT_FIELD(u8_t padding[ETH_PAD_SIZE]);
+  PACK_STRUCT_FIELD(u8_t padding[ETH_PAD_SIZE]);         
 #endif
-  PACK_STRUCT_FIELD(struct eth_addr dest);
-  PACK_STRUCT_FIELD(struct eth_addr src);
-  PACK_STRUCT_FIELD(u16_t type);
+  PACK_STRUCT_FIELD(struct eth_addr dest);           //以太网目的地址(6字节)
+  PACK_STRUCT_FIELD(struct eth_addr src);            //以太网源地址(6字节)
+  PACK_STRUCT_FIELD(u16_t type);                     //帧类型(2字节)
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
+
+
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
 
+//定义以太网帧头部长度宏，其中 ETH_PAD_SIZE 已定义为 0
 #define SIZEOF_ETH_HDR (14 + ETH_PAD_SIZE)
 
 #if ETHARP_SUPPORT_VLAN
@@ -110,31 +117,34 @@ PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
 #endif
-PACK_STRUCT_BEGIN
+
+PACK_STRUCT_BEGIN                                              //定义ARP数据包结构体etharp_hdr，禁止编译器自对齐
 /** the ARP message, see RFC 826 ("Packet format") */
 struct etharp_hdr {
-  PACK_STRUCT_FIELD(u16_t hwtype);
-  PACK_STRUCT_FIELD(u16_t proto);
-  PACK_STRUCT_FIELD(u8_t  hwlen);
-  PACK_STRUCT_FIELD(u8_t  protolen);
-  PACK_STRUCT_FIELD(u16_t opcode);
-  PACK_STRUCT_FIELD(struct eth_addr shwaddr);
-  PACK_STRUCT_FIELD(struct ip_addr2 sipaddr);
-  PACK_STRUCT_FIELD(struct eth_addr dhwaddr);
-  PACK_STRUCT_FIELD(struct ip_addr2 dipaddr);
+  PACK_STRUCT_FIELD(u16_t hwtype);                    //硬件类型(2字节)
+  PACK_STRUCT_FIELD(u16_t proto);                     //协议类型(2字节)
+  PACK_STRUCT_FIELD(u8_t  hwlen);                     //硬件 + 协议地址长度(2字节)
+  PACK_STRUCT_FIELD(u8_t  protolen);                  
+  PACK_STRUCT_FIELD(u16_t opcode);                    //操作字段op(2字节)
+  PACK_STRUCT_FIELD(struct eth_addr shwaddr);         //发送方MAC地址(6字节)
+  PACK_STRUCT_FIELD(struct ip_addr2 sipaddr);         //发送方IP地址(4字节)
+  PACK_STRUCT_FIELD(struct eth_addr dhwaddr);         //接收方MAC地址(6字节)
+  PACK_STRUCT_FIELD(struct ip_addr2 dipaddr);         //接收方IP地址(4字节)
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
+
+
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
 
-#define SIZEOF_ETHARP_HDR 28
-#define SIZEOF_ETHARP_PACKET (SIZEOF_ETH_HDR + SIZEOF_ETHARP_HDR)
+#define SIZEOF_ETHARP_HDR 28                                          //宏，ARP数据包长度
+#define SIZEOF_ETHARP_PACKET (SIZEOF_ETH_HDR + SIZEOF_ETHARP_HDR)     //宏，包含ARP数据包的以太网帧长度
 
 /** 5 seconds period */
-#define ARP_TMR_INTERVAL 5000
+#define ARP_TMR_INTERVAL 5000                                         //定义ARP定时器周期为5s
 
-#define ETHTYPE_ARP       0x0806U
+#define ETHTYPE_ARP       0x0806U                                     //不同帧类型的宏定义
 #define ETHTYPE_IP        0x0800U
 #define ETHTYPE_VLAN      0x8100U
 #define ETHTYPE_PPPOEDISC 0x8863U  /* PPP Over Ethernet Discovery Stage */
@@ -155,8 +165,9 @@ PACK_STRUCT_END
 #if LWIP_ARP /* don't build if not configured for use in lwipopts.h */
 
 /** ARP message types (opcodes) */
-#define ARP_REQUEST 1
-#define ARP_REPLY   2
+//ARP数据包中OP字段取值宏定义
+#define ARP_REQUEST 1                                                 //ARP请求
+#define ARP_REPLY   2                                                 //ARP应答
 
 /** Define this to 1 and define LWIP_ARP_FILTER_NETIF_FN(pbuf, netif, type)
  * to a filter function that returns the correct netif when using multiple
@@ -172,9 +183,10 @@ PACK_STRUCT_END
 /** struct for queueing outgoing packets for unknown address
   * defined here to be accessed by memp.h
   */
+//描述缓冲队列的数据结构
 struct etharp_q_entry {
-  struct etharp_q_entry *next;
-  struct pbuf *p;
+  struct etharp_q_entry *next;            //指向下一个缓冲数据包
+  struct pbuf *p;                         //指向数据包pbuf
 };
 #endif /* ARP_QUEUEING */
 

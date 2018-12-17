@@ -96,13 +96,15 @@ err_t ethernetif_input(struct netif *netif)
 {
 	err_t err;
 	struct pbuf *p;
-	p=low_level_input(netif);
-	if(p==NULL) return ERR_MEM;
-	err=netif->input(p, netif);
+	p=low_level_input(netif);          //调用底层函数读取一个数据包
+	
+	if(p==NULL) return ERR_MEM;        //如果数据包为空，则直接返回
+	
+	err=netif->input(p, netif);        
 	if(err!=ERR_OK)
 	{
 		LWIP_DEBUGF(NETIF_DEBUG,("ethernetif_input: IP input error\n"));
-		pbuf_free(p);
+		pbuf_free(p);                  //未完成正常的处理，则释放数据包
 		p = NULL;
 	} 
 	return err;
