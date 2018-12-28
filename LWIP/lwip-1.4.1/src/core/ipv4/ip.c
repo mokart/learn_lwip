@@ -97,12 +97,14 @@
  * The interface that provided the packet for the current callback
  * invocation.
  */
-struct netif *current_netif;
+ //定义两个全局变量，可以在其他文件中被引用
+struct netif *current_netif;          //指向接收到当前处理的数据报的网络接口结构
 
 /**
  * Header of the input packet currently being processed.
  */
-const struct ip_hdr *current_header;
+const struct ip_hdr *current_header;  //指向当前处理的数据报的首部
+
 /** Source IP address of current_header */
 ip_addr_t current_iphdr_src;
 /** Destination IP address of current_header */
@@ -120,6 +122,9 @@ static u16_t ip_id;
  * @param dest the destination IP address for which to find the route
  * @return the netif on which to send to reach dest
  */
+ //函数功能 : 根据目的IP地址选择一个最合适的网络接口结构
+ //参数     : 目的IP地址
+ //返回值   : 指向相应网络接口结构的指针
 struct netif *
 ip_route(ip_addr_t *dest)
 {
@@ -133,24 +138,29 @@ ip_route(ip_addr_t *dest)
 #endif
 
   /* iterate through netifs */
-  for (netif = netif_list; netif != NULL; netif = netif->next) {
+  for (netif = netif_list; netif != NULL; netif = netif->next)          //依次遍历接口结构链表
+  {
     /* network mask matches? */
-    if (netif_is_up(netif)) {
-      if (ip_addr_netcmp(dest, &(netif->ip_addr), &(netif->netmask))) {
+    if (netif_is_up(netif))        //接口已经使能
+	{
+      if (ip_addr_netcmp(dest, &(netif->ip_addr), &(netif->netmask)))   //且与目的IP地址主机处于同一子网内，则返回这个接口结构
+	  {
         /* return netif on which to forward IP packet */
         return netif;
       }
     }
-  }
-  if ((netif_default == NULL) || (!netif_is_up(netif_default))) {
+  } //for
+  //到这里，说明没有找到合适的接口，我们把系列的默认网络接口作为结果返回
+  if ((netif_default == NULL) || (!netif_is_up(netif_default))) //如果默认网络接口未配置或未使能，则返回空指针
+  {
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
       ip4_addr1_16(dest), ip4_addr2_16(dest), ip4_addr3_16(dest), ip4_addr4_16(dest)));
     IP_STATS_INC(ip.rterr);
     snmp_inc_ipoutnoroutes();
-    return NULL;
+    return NULL;                            //未使能，则返回空指针
   }
   /* no matching netif found, use default netif */
-  return netif_default;
+  return netif_default;                     //返回默认网络接口
 }
 
 #if IP_FORWARD
@@ -198,6 +208,7 @@ ip_canforward(struct pbuf *p)
  * @param iphdr the IP header of the input packet
  * @param inp the netif on which this packet was received
  */
+ //多网络接口下的数据转发
 static void
 ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 {
@@ -236,14 +247,15 @@ ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 #endif /* IP_FORWARD_ALLOW_TX_ON_RX_NETIF */
 
   /* decrement TTL */
-  IPH_TTL_SET(iphdr, IPH_TTL(iphdr) - 1);
+  IPH_TTL_SET(iphdr, IPH_TTL(iphdr) - 1);          //转发前，先将IP数据报首部中的TTL字段值减一
   /* send ICMP if TTL == 0 */
-  if (IPH_TTL(iphdr) == 0) {
+  if (IPH_TTL(iphdr) == 0) {                       //若TTL变为0
     snmp_inc_ipinhdrerrors();
 #if LWIP_ICMP
     /* Don't send ICMP messages in response to ICMP messages */
-    if (IPH_PROTO(iphdr) != IP_PROTO_ICMP) {
-      icmp_time_exceeded(p, ICMP_TE_TTL);
+    if (IPH_PROTO(iphdr) != IP_PROTO_ICMP) 
+	{
+      icmp_time_exceeded(p, ICMP_TE_TTL);         //向源主机发送一份ICMP超时信息，表示当前数据的生存周期到了，这个数据报在这里被丢弃，不再转发
     }
 #endif /* LWIP_ICMP */
     return;
@@ -266,19 +278,24 @@ ip_forward(struct pbuf *p, struct ip_hdr *iphdr, struct netif *inp)
 
   PERF_STOP("ip_forward");
   /* don't fragment if interface has mtu set to 0 [loopif] */
-  if (netif->mtu && (p->tot_len > netif->mtu)) {
-    if ((IPH_OFFSET(iphdr) & PP_NTOHS(IP_DF)) == 0) {
+  if (netif->mtu && (p->tot_len > netif->mtu)) 
+  {
+    if ((IPH_OFFSET(iphdr) & PP_NTOHS(IP_DF)) == 0) 
+	{
 #if IP_FRAG
       ip_frag(p, netif, ip_current_dest_addr());
 #else /* IP_FRAG */
       /* @todo: send ICMP Destination Unreacheable code 13 "Communication administratively prohibited"? */
 #endif /* IP_FRAG */
-    } else {
+    } 
+	else 
+	{
       /* send ICMP Destination Unreacheable code 4: "Fragmentation Needed and DF Set" */
       icmp_dest_unreach(p, ICMP_DUR_FRAG);
     }
     return;
   }
+  
   /* transmit pbuf on chosen interface */
   netif->output(netif, p, &current_iphdr_dest);
   return;
@@ -301,13 +318,17 @@ return_noroute:
  * @return ERR_OK if the packet was processed (could return ERR_* if it wasn't
  *         processed, but currently always returns ERR_OK)
  */
+ //函数功能 : 处理收到的IP数据报
+ //参数p    : 指向接收到的数据报 pbuf
+ //参数inp  : 指向收到的数据报的网络接口
 err_t
 ip_input(struct pbuf *p, struct netif *inp)
 {
-  struct ip_hdr *iphdr;
-  struct netif *netif;
-  u16_t iphdr_hlen;
-  u16_t iphdr_len;
+  struct ip_hdr *iphdr;                      //数据报首部指针
+  struct netif *netif;                       //网络接口结构指针
+  u16_t iphdr_hlen;                          //数据报首部长度
+  u16_t iphdr_len;                           //数据报总长度
+  
 #if IP_ACCEPT_LINK_LAYER_ADDRESSING
   int check_ip_src=1;
 #endif /* IP_ACCEPT_LINK_LAYER_ADDRESSING */
@@ -316,15 +337,15 @@ ip_input(struct pbuf *p, struct netif *inp)
   snmp_inc_ipinreceives();
 
   /* identify the IP header */
-  iphdr = (struct ip_hdr *)p->payload;
-  if (IPH_V(iphdr) != 4) {
+  iphdr = (struct ip_hdr *)p->payload;          //iphdr指向pbuf中的数据报首部
+  if (IPH_V(iphdr) != 4) {                      //判断版本号是否是4，只处理IPV4的数据报
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_WARNING, ("IP packet dropped due to bad version number %"U16_F"\n", IPH_V(iphdr)));
-    ip_debug_print(p);
-    pbuf_free(p);
+    ip_debug_print(p);              
+    pbuf_free(p);                               //版本号不满足要求则直接删除数据报
     IP_STATS_INC(ip.err);
     IP_STATS_INC(ip.drop);
     snmp_inc_ipinhdrerrors();
-    return ERR_OK;
+    return ERR_OK;                              //返回处理结果，正常结束
   }
 
 #ifdef LWIP_HOOK_IP4_INPUT
@@ -335,14 +356,17 @@ ip_input(struct pbuf *p, struct netif *inp)
 #endif
 
   /* obtain IP header length in number of 32-bit words */
-  iphdr_hlen = IPH_HL(iphdr);
+  iphdr_hlen = IPH_HL(iphdr);                   //读取首部长度字段，以4字节为单位
   /* calculate IP header length in bytes */
-  iphdr_hlen *= 4;
+  iphdr_hlen *= 4;                              //计算首部长度，以字节为单位
   /* obtain ip length in bytes */
-  iphdr_len = ntohs(IPH_LEN(iphdr));
+  iphdr_len = ntohs(IPH_LEN(iphdr));            //读取数据报总长度字段，转换为主机序
 
   /* header length exceeds first pbuf length, or ip length exceeds total pbuf length? */
-  if ((iphdr_hlen > p->len) || (iphdr_len > p->tot_len)) {
+  //下面检验长度字段，当数据报总长度大于pbuf链中的所有数据长度，或者
+  //数据报首部长度大于第一个pbuf中的数据长度时，丢弃数据报
+  if ((iphdr_hlen > p->len) || (iphdr_len > p->tot_len)) 
+  {
     if (iphdr_hlen > p->len) {
       LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
         ("IP header (len %"U16_F") does not fit in first pbuf (len %"U16_F"), IP packet dropped.\n",
@@ -358,12 +382,13 @@ ip_input(struct pbuf *p, struct netif *inp)
     IP_STATS_INC(ip.lenerr);
     IP_STATS_INC(ip.drop);
     snmp_inc_ipindiscards();
-    return ERR_OK;
+    return ERR_OK;                     //返回处理结果，正常结束
   }
 
   /* verify checksum */
 #if CHECKSUM_CHECK_IP
-  if (inet_chksum(iphdr, iphdr_hlen) != 0) {
+  //下面计算校验和，按照10.2节所述，接收数据报的校验和应该为0
+  if (inet_chksum(iphdr, iphdr_hlen) != 0) {  //否则丢弃掉数据
 
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
       ("Checksum (0x%"X16_F") failed, IP packet dropped.\n", inet_chksum(iphdr, iphdr_hlen)));
@@ -372,21 +397,24 @@ ip_input(struct pbuf *p, struct netif *inp)
     IP_STATS_INC(ip.chkerr);
     IP_STATS_INC(ip.drop);
     snmp_inc_ipinhdrerrors();
-    return ERR_OK;
+    return ERR_OK;                 //返回处理结果，正常结束
   }
 #endif
 
   /* Trim pbuf. This should have been done at the netif layer,
    * but we'll do it anyway just to be sure that its done. */
-  pbuf_realloc(p, iphdr_len);
-
+  pbuf_realloc(p, iphdr_len);   //调整pbuf的长度，删除以太网帧尾部的填充字段(若有)
+  //接下来，查看目的IP地址是否与本地IP地址匹配，这里需要查找链表netif_list
+  //对比所有网络接口结构的IP地址
+  
   /* copy IP addresses to aligned ip_addr_t */
   ip_addr_copy(current_iphdr_dest, iphdr->dest);
   ip_addr_copy(current_iphdr_src, iphdr->src);
 
   /* match packet against an interface, i.e. is this packet for us? */
 #if LWIP_IGMP
-  if (ip_addr_ismulticast(&current_iphdr_dest)) {
+  if (ip_addr_ismulticast(&current_iphdr_dest)) 
+  {
     if ((inp->flags & NETIF_FLAG_IGMP) && (igmp_lookfor_group(inp, &current_iphdr_dest))) {
       netif = inp;
     } else {
@@ -398,8 +426,8 @@ ip_input(struct pbuf *p, struct netif *inp)
     /* start trying with inp. if that's not acceptable, start walking the
        list of configured netifs.
        'first' is used as a boolean to mark whether we started walking the list */
-    int first = 1;
-    netif = inp;
+    int first = 1;             //局部变量，标志是否已开始遍历链表netif_list
+    netif = inp;               //首先判断是不是接受到数据包的网络接口，因为这个概率最大
     do {
       LWIP_DEBUGF(IP_DEBUG, ("ip_input: iphdr->dest 0x%"X32_F" netif->ip_addr 0x%"X32_F" (0x%"X32_F", 0x%"X32_F", 0x%"X32_F")\n",
           ip4_addr_get_u32(&iphdr->dest), ip4_addr_get_u32(&netif->ip_addr),
@@ -408,7 +436,9 @@ ip_input(struct pbuf *p, struct netif *inp)
           ip4_addr_get_u32(&iphdr->dest) & ~ip4_addr_get_u32(&netif->netmask)));
 
       /* interface is up and configured? */
-      if ((netif_is_up(netif)) && (!ip_addr_isany(&(netif->ip_addr)))) {
+      if ((netif_is_up(netif)) && (!ip_addr_isany(&(netif->ip_addr)))) 
+	  {
+	    //如果两个IP地址相等或者目的IP地址为该接口上的广播地址
         /* unicast to this interface address? */
         if (ip_addr_cmp(&current_iphdr_dest, &(netif->ip_addr)) ||
             /* or broadcast on this interface network address? */
@@ -416,7 +446,7 @@ ip_input(struct pbuf *p, struct netif *inp)
           LWIP_DEBUGF(IP_DEBUG, ("ip_input: packet accepted on interface %c%c\n",
               netif->name[0], netif->name[1]));
           /* break out of for loop */
-          break;
+          break;                       //退出循环，netif 中保存了查找结果
         }
 #if LWIP_AUTOIP
         /* connections to link-local addresses must persist after changing
@@ -430,16 +460,20 @@ ip_input(struct pbuf *p, struct netif *inp)
         }
 #endif /* LWIP_AUTOIP */
       }
-      if (first) {
-        first = 0;
-        netif = netif_list;
-      } else {
-        netif = netif->next;
+
+	  if (first) {                    //查找失败，且first为1，则开始查找链表netif_list
+        first = 0;                    //设置开始标志
+        netif = netif_list;           //得到第一个接口结构
+      } 
+	  else                            //链表查找已开始
+	  {
+        netif = netif->next;          //得到下一个接口结构
       }
-      if (netif == inp) {
-        netif = netif->next;
+	  
+      if (netif == inp) {             //如果接口结构就是接收到数据报的那个，我们已将在
+        netif = netif->next;          //最开始判断过了，跳过，得到下一个接口结构
       }
-    } while(netif != NULL);
+    } while(netif != NULL);  //接口结构有效，则循环
   }
 
 #if IP_ACCEPT_LINK_LAYER_ADDRESSING
@@ -452,7 +486,8 @@ ip_input(struct pbuf *p, struct netif *inp)
    *
    * #define LWIP_IP_ACCEPT_UDP_PORT(dst_port) ((dst_port) == PP_NTOHS(12345))
    */
-  if (netif == NULL) {
+  if (netif == NULL) 
+  {
     /* remote port is DHCP server? */
     if (IPH_PROTO(iphdr) == IP_PROTO_UDP) {
       struct udp_hdr *udphdr = (struct udp_hdr *)((u8_t *)iphdr + iphdr_hlen);
@@ -472,8 +507,11 @@ ip_input(struct pbuf *p, struct netif *inp)
   /* DHCP servers need 0.0.0.0 to be allowed as source address (RFC 1.1.2.2: 3.2.1.3/a) */
   if (check_ip_src && !ip_addr_isany(&current_iphdr_src))
 #endif /* IP_ACCEPT_LINK_LAYER_ADDRESSING */
-  {  if ((ip_addr_isbroadcast(&current_iphdr_src, inp)) ||
-         (ip_addr_ismulticast(&current_iphdr_src))) {
+  {  //对于这类数据，直接丢弃
+     
+     if ((ip_addr_isbroadcast(&current_iphdr_src, inp)) ||
+         (ip_addr_ismulticast(&current_iphdr_src))) 
+     {
       /* packet source is not valid */
       LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_WARNING, ("ip_input: packet source is not valid.\n"));
       /* free (drop) packet pbufs */
@@ -486,15 +524,18 @@ ip_input(struct pbuf *p, struct netif *inp)
   }
 
   /* packet not for us? */
+  //到这里，如果没有找到对应的网络接口， 说明数据报不上给本地的，可以将数据报转发出去
   if (netif == NULL) {
     /* packet not for us, route or discard */
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_TRACE, ("ip_input: packet not for us.\n"));
 #if IP_FORWARD
     /* non-broadcast packet? */
-    if (!ip_addr_isbroadcast(&current_iphdr_dest, inp)) {
+    if (!ip_addr_isbroadcast(&current_iphdr_dest, inp))     //不转发广播数据报
+	{ 
       /* try to forward IP packet on (other) interfaces */
-      ip_forward(p, iphdr, inp);
-    } else
+      ip_forward(p, iphdr, inp);                            //调用ip_forward在其他接口上转发数据报
+    } 
+	else
 #endif /* IP_FORWARD */
     {
       snmp_inc_ipinaddrerrors();
@@ -503,18 +544,22 @@ ip_input(struct pbuf *p, struct netif *inp)
     pbuf_free(p);
     return ERR_OK;
   }
-  /* packet consists of multiple fragments? */
-  if ((IPH_OFFSET(iphdr) & PP_HTONS(IP_OFFMASK | IP_MF)) != 0) {
+  /* packet consists of multiple fragments */
+  //数据报是给本地的，下面判断是否为分片数据报，若是，则进行分片重组
+  if ((IPH_OFFSET(iphdr) & PP_HTONS(IP_OFFMASK | IP_MF)) != 0) 
+  {  
+    //更多分片标志置位，或者片偏移量不为0
 #if IP_REASSEMBLY /* packet fragment reassembly code present? */
     LWIP_DEBUGF(IP_DEBUG, ("IP packet is a fragment (id=0x%04"X16_F" tot_len=%"U16_F" len=%"U16_F" MF=%"U16_F" offset=%"U16_F"), calling ip_reass()\n",
       ntohs(IPH_ID(iphdr)), p->tot_len, ntohs(IPH_LEN(iphdr)), !!(IPH_OFFSET(iphdr) & PP_HTONS(IP_MF)), (ntohs(IPH_OFFSET(iphdr)) & IP_OFFMASK)*8));
     /* reassemble the packet*/
-    p = ip_reass(p);
+    p = ip_reass(p);                         //调用函数ip_reass重装数据报
     /* packet not fully reassembled yet? */
-    if (p == NULL) {
-      return ERR_OK;
+    if (p == NULL) {                         //如果分片重装完成，则ip_reass函数会返回整个重装好的数据报，否则返回NULL,且分片会被暂时保存在协议栈内部
+      return ERR_OK;                         //未重装好，ip_input函数直接返回
     }
-    iphdr = (struct ip_hdr *)p->payload;
+	
+    iphdr = (struct ip_hdr *)p->payload;     //分片重装完成，则iphdr指向整个数据报的首部
 #else /* IP_REASSEMBLY == 0, no packet fragment reassembly code present */
     pbuf_free(p);
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("IP packet dropped since it was fragmented (0x%"X16_F") (while IP_REASSEMBLY == 0).\n",
@@ -533,7 +578,12 @@ ip_input(struct pbuf *p, struct netif *inp)
   /* there is an extra "router alert" option in IGMP messages which we allow for but do not police */
   if((iphdr_hlen > IP_HLEN) &&  (IPH_PROTO(iphdr) != IP_PROTO_IGMP)) {
 #else
-  if (iphdr_hlen > IP_HLEN) {
+
+  //到这里，不管是否经过分片重组，我们得到的应该是一个完整的数据报
+  //判断IP首部长度
+  if (iphdr_hlen > IP_HLEN) 
+  { 
+    //不处理带首部选项的数据报
 #endif /* LWIP_IGMP */
     LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("IP packet dropped since there were IP options (while IP_OPTIONS_ALLOWED == 0).\n"));
     pbuf_free(p);
@@ -550,16 +600,17 @@ ip_input(struct pbuf *p, struct netif *inp)
   ip_debug_print(p);
   LWIP_DEBUGF(IP_DEBUG, ("ip_input: p->len %"U16_F" p->tot_len %"U16_F"\n", p->len, p->tot_len));
 
-  current_netif = inp;
-  current_header = iphdr;
+  //到这里，所有校验工作完成，将数据报向上层递交
+  current_netif = inp;                          //记录下接收到当前数据报的网络接口结构
+  current_header = iphdr;                       //当前处理的数据报首部
 
 #if LWIP_RAW
   /* raw input did not eat the packet? */
-  if (raw_input(p, inp) == 0)
+  if (raw_input(p, inp) == 0)                   //为用户直接与IP数据报交互预留的接口
 #endif /* LWIP_RAW */
   {
-    switch (IPH_PROTO(iphdr)) {
-#if LWIP_UDP
+    switch (IPH_PROTO(iphdr)) {                 //根据首部中的协议类型字段，递交给不同的上层协议
+#if LWIP_UDP                                    //UDP协议数据
     case IP_PROTO_UDP:
 #if LWIP_UDPLITE
     case IP_PROTO_UDPLITE:
@@ -568,33 +619,33 @@ ip_input(struct pbuf *p, struct netif *inp)
       udp_input(p, inp);
       break;
 #endif /* LWIP_UDP */
-#if LWIP_TCP
+#if LWIP_TCP                                    //TCP协议数据
     case IP_PROTO_TCP:
       snmp_inc_ipindelivers();
       tcp_input(p, inp);
       break;
 #endif /* LWIP_TCP */
 #if LWIP_ICMP
-    case IP_PROTO_ICMP:
+    case IP_PROTO_ICMP:                                      //ICMP协议数据
       snmp_inc_ipindelivers();
       icmp_input(p, inp);
       break;
 #endif /* LWIP_ICMP */
 #if LWIP_IGMP
-    case IP_PROTO_IGMP:
+    case IP_PROTO_IGMP:                                     //IGMP协议数据
       igmp_input(p, inp, &current_iphdr_dest);
       break;
 #endif /* LWIP_IGMP */
-    default:
+    default:                                                //找不到上层协议，则为源主机返回目的不可达ICMP报文
 #if LWIP_ICMP
       /* send ICMP destination protocol unreachable unless is was a broadcast */
       if (!ip_addr_isbroadcast(&current_iphdr_dest, inp) &&
           !ip_addr_ismulticast(&current_iphdr_dest)) {
-        p->payload = iphdr;
-        icmp_dest_unreach(p, ICMP_DUR_PROTO);
+        p->payload = iphdr;                                //将数据包playload指针指向IP数据报首部
+        icmp_dest_unreach(p, ICMP_DUR_PROTO);              //发送ICMP报文
       }
 #endif /* LWIP_ICMP */
-      pbuf_free(p);
+      pbuf_free(p);                                        //删除数据包pbuf
 
       LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("Unsupported transport protocol %"U16_F"\n", IPH_PROTO(iphdr)));
 
@@ -604,7 +655,7 @@ ip_input(struct pbuf *p, struct netif *inp)
     }
   }
 
-  current_netif = NULL;
+  current_netif = NULL;                                    //将两个全局变量清0
   current_header = NULL;
   ip_addr_set_any(&current_iphdr_src);
   ip_addr_set_any(&current_iphdr_dest);
@@ -637,6 +688,8 @@ ip_input(struct pbuf *p, struct netif *inp)
  * @note ip_id: RFC791 "some host may be able to simply use
  *  unique identifiers independent of destination"
  */
+ //函数功能 : 填写IP首部中的各个字段值(不处理选项字段)，并发送数据报
+ //参数说明 : netif为发送数据包的网络接口结构，其他参数与ip_output的相同
 err_t
 ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
              u8_t ttl, u8_t tos,
@@ -652,6 +705,7 @@ ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
  * @ param ip_options pointer to the IP options, copied into the IP header
  * @ param optlen length of ip_options
  */
+ //跟ip_output_if 差不多 多一个选项字段
 err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
        u8_t ttl, u8_t tos, u8_t proto, struct netif *netif, void *ip_options,
        u16_t optlen)
@@ -669,9 +723,11 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
 
   snmp_inc_ipoutrequests();
 
-  /* Should the IP header be generated or is it already included in p? */
-  if (dest != IP_HDRINCL) {
-    u16_t ip_hlen = IP_HLEN;
+  /* Should the IP header be generated or is it already included in p */
+  if (dest != IP_HDRINCL)
+  {
+    //dest 不为IP_HDRINCL,说明pbuf中未填写IP首部
+    u16_t ip_hlen = IP_HLEN;                     //宏IP_HLEN为默认的IP首部长度，20
 #if IP_OPTIONS_SEND
     u16_t optlen_aligned = 0;
     if (optlen != 0) {
@@ -701,50 +757,55 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
     }
 #endif /* IP_OPTIONS_SEND */
     /* generate IP header */
-    if (pbuf_header(p, IP_HLEN)) {
+    if (pbuf_header(p, IP_HLEN)) {               //移动payload指针，指向pbuf中的IP首部
       LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_output: not enough room for IP header in pbuf\n"));
 
       IP_STATS_INC(ip.err);
       snmp_inc_ipoutdiscards();
-      return ERR_BUF;
+      return ERR_BUF;                            //失败,返回pbuf空间错误
     }
 
-    iphdr = (struct ip_hdr *)p->payload;
+    iphdr = (struct ip_hdr *)p->payload;         //iphdr指向数据报首部
+    
     LWIP_ASSERT("check that first pbuf can hold struct ip_hdr",
                (p->len >= sizeof(struct ip_hdr)));
 
-    IPH_TTL_SET(iphdr, ttl);
-    IPH_PROTO_SET(iphdr, proto);
+    IPH_TTL_SET(iphdr, ttl);                     //填写TTL字段
+    IPH_PROTO_SET(iphdr, proto);                 //填写协议字段
 #if CHECKSUM_GEN_IP_INLINE
     chk_sum += LWIP_MAKE_U16(proto, ttl);
 #endif /* CHECKSUM_GEN_IP_INLINE */
 
     /* dest cannot be NULL here */
-    ip_addr_copy(iphdr->dest, *dest);
+    ip_addr_copy(iphdr->dest, *dest);            //填写目的IP地址
+    
 #if CHECKSUM_GEN_IP_INLINE
     chk_sum += ip4_addr_get_u32(&iphdr->dest) & 0xFFFF;
     chk_sum += ip4_addr_get_u32(&iphdr->dest) >> 16;
 #endif /* CHECKSUM_GEN_IP_INLINE */
 
-    IPH_VHL_SET(iphdr, 4, ip_hlen / 4);
+    IPH_VHL_SET(iphdr, 4, ip_hlen / 4);         //填写版本号+首部长度+服务类型
     IPH_TOS_SET(iphdr, tos);
 #if CHECKSUM_GEN_IP_INLINE
     chk_sum += LWIP_MAKE_U16(tos, iphdr->_v_hl);
 #endif /* CHECKSUM_GEN_IP_INLINE */
-    IPH_LEN_SET(iphdr, htons(p->tot_len));
+    IPH_LEN_SET(iphdr, htons(p->tot_len));      //填写数据报总长度
 #if CHECKSUM_GEN_IP_INLINE
     chk_sum += iphdr->_len;
 #endif /* CHECKSUM_GEN_IP_INLINE */
-    IPH_OFFSET_SET(iphdr, 0);
-    IPH_ID_SET(iphdr, htons(ip_id));
+    IPH_OFFSET_SET(iphdr, 0);                   //填写标志位和片偏移字段，都为0
+    IPH_ID_SET(iphdr, htons(ip_id));            //填写标识字段
 #if CHECKSUM_GEN_IP_INLINE
     chk_sum += iphdr->_id;
 #endif /* CHECKSUM_GEN_IP_INLINE */
-    ++ip_id;
+    ++ip_id;                                    //数据报编号值加1
 
-    if (ip_addr_isany(src)) {
+    if (ip_addr_isany(src)) 
+	{                                           //若src为空，则将源IP地址填写为网络接口的IP地址
       ip_addr_copy(iphdr->src, netif->ip_addr);
-    } else {
+    } 
+	else 
+    {                                           //若src不为空，则直接填写源IP地址
       /* src cannot be NULL here */
       ip_addr_copy(iphdr->src, *src);
     }
@@ -757,43 +818,53 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
     chk_sum = ~chk_sum;
     iphdr->_chksum = chk_sum; /* network order */
 #else /* CHECKSUM_GEN_IP_INLINE */
-    IPH_CHKSUM_SET(iphdr, 0);
+    IPH_CHKSUM_SET(iphdr, 0);                             //清0校验和字段
+    
 #if CHECKSUM_GEN_IP
-    IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, ip_hlen));
+    IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, ip_hlen));   //计算并填写首部校验和
 #endif
+
 #endif /* CHECKSUM_GEN_IP_INLINE */
-  } else {
+  }
+  else 
+  {
     /* IP header already included in p */
     iphdr = (struct ip_hdr *)p->payload;
     ip_addr_copy(dest_addr, iphdr->dest);
-    dest = &dest_addr;
+    dest = &dest_addr;                     //只是用变量dest记录下数据报中的目的IP地址
   }
-
+  
   IP_STATS_INC(ip.xmit);
-
+  
   LWIP_DEBUGF(IP_DEBUG, ("ip_output_if: %c%c%"U16_F"\n", netif->name[0], netif->name[1], netif->num));
   ip_debug_print(p);
-
+  
+  //下面开始发送IP数据报，分三种情况来处理
 #if ENABLE_LOOPBACK
-  if (ip_addr_cmp(dest, &netif->ip_addr)) {
+  if (ip_addr_cmp(dest, &netif->ip_addr))              // 如果目的 IP 地址是本网卡的地址
+  {
     /* Packet to self, enqueue it for loopback */
     LWIP_DEBUGF(IP_DEBUG, ("netif_loop_output()"));
-    return netif_loop_output(netif, p, dest);
+    return netif_loop_output(netif, p, dest);          //则调用环回输入，这个函数见第8章
   }
 #if LWIP_IGMP
-  if ((p->flags & PBUF_FLAG_MCASTLOOP) != 0) {
+  if ((p->flags & PBUF_FLAG_MCASTLOOP) != 0) 
+  {
     netif_loop_output(netif, p, dest);
   }
 #endif /* LWIP_IGMP */
 #endif /* ENABLE_LOOPBACK */
 #if IP_FRAG
   /* don't fragment if interface has mtu set to 0 [loopif] */
-  if (netif->mtu && (p->tot_len > netif->mtu)) {
-    return ip_frag(p, netif, dest);
+  if (netif->mtu && (p->tot_len > netif->mtu))   //如果数据报太大(大于接口的mtu)
+  {
+    return ip_frag(p, netif, dest);              //则调用函数ip_frag对数据报分片发送
   }
 #endif /* IP_FRAG */
-
+  
   LWIP_DEBUGF(IP_DEBUG, ("netif->output()"));
+  //剩下的情况，直接调用接口注册的output函数发送数据报
+  //netif->output=etharp_output;//IP层发送数据包函数，这里使用ARP的相关函数
   return netif->output(netif, p, dest);
 }
 
@@ -814,6 +885,12 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
  * @return ERR_RTE if no route is found
  *         see ip_output_if() for more return values
  */
+ //函数功能 : 被传输层协议调用以发送数据报，该函数查找网络接口并调用函数ip_output_if完成最终的发送工作
+ //参数 p : 传输层协议需要发送的数据包pbuf,payload指针已指向了协议首部
+ //参数 src : 源IP地址，若为NULL，则使用网络接口结构中保存的IP地址
+ //参数 dest : 目的IP地址，若为IP_HDRINCL,则表示p中已经有了填好的IP
+ //参数报首部，且payload指针也已经指向了IP首部
+ //参数ttl,tos,proto; IP首部中的TTL字段、服务类型和协议类型值
 err_t
 ip_output(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
           u8_t ttl, u8_t tos, u8_t proto)
@@ -824,13 +901,15 @@ ip_output(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
      gets altered as the packet is passed down the stack */
   LWIP_ASSERT("p->ref == 1", p->ref == 1);
 
-  if ((netif = ip_route(dest)) == NULL) {
+  //根据目的IP地址为数据报寻找一个合适的网络接口
+  if ((netif = ip_route(dest)) == NULL) { //若找到，变量netif指向对应的接口结构
     LWIP_DEBUGF(IP_DEBUG, ("ip_output: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
       ip4_addr1_16(dest), ip4_addr2_16(dest), ip4_addr3_16(dest), ip4_addr4_16(dest)));
     IP_STATS_INC(ip.rterr);
-    return ERR_RTE;
+    return ERR_RTE;      //找不到，返回接口错误
   }
 
+  //否则，增加netif为参数调用函数if_output_if
   return ip_output_if(p, src, dest, ttl, tos, proto, netif);
 }
 

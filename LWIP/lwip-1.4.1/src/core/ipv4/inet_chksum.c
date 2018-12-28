@@ -44,8 +44,8 @@
 #include <stddef.h>
 #include <string.h>
 
-/* These are some reference implementations of the checksum algorithm, with the
- * aim of being simple, correct and fully portable. Checksumming is the
+/* These are some reference参考 implementations of the checksum algorithm, with the
+ * aim of being simple, correct对的 and fully portable. Checksumming is the
  * first thing you would want to optimize for your platform. If you create
  * your own version, link it in and in your cc.h put:
  * 
@@ -55,10 +55,10 @@
  * LWIP_CHKSUM_ALGORITHM to 1, 2 or 3.
  */
 
-#ifndef LWIP_CHKSUM
-# define LWIP_CHKSUM lwip_standard_chksum
+#ifndef LWIP_CHKSUM                            //用户可以通过定义该宏来使用其他自定义校验算法
+# define LWIP_CHKSUM lwip_standard_chksum      //定义宏LWIP_CHKSUM
 # ifndef LWIP_CHKSUM_ALGORITHM
-#  define LWIP_CHKSUM_ALGORITHM 2
+#  define LWIP_CHKSUM_ALGORITHM 2              //默认使用第一种校验方式
 # endif
 #endif
 /* If none set: */

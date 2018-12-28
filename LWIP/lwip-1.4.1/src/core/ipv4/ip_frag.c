@@ -75,6 +75,7 @@
 #define IP_REASS_FREE_OLDEST 1
 #endif /* IP_REASS_FREE_OLDEST */
 
+//定义宏，用于ip_reassdata结构的flags字段，表示该数据报
 #define IP_REASS_FLAG_LASTFRAG 0x01
 
 /** This is a helper struct which holds the starting
@@ -90,9 +91,9 @@
 #endif
 PACK_STRUCT_BEGIN
 struct ip_reass_helper {
-  PACK_STRUCT_FIELD(struct pbuf *next_pbuf);
-  PACK_STRUCT_FIELD(u16_t start);
-  PACK_STRUCT_FIELD(u16_t end);
+  PACK_STRUCT_FIELD(struct pbuf *next_pbuf);  //指向下一个分片
+  PACK_STRUCT_FIELD(u16_t start);             //分片中数据的起始位置
+  PACK_STRUCT_FIELD(u16_t end);               //分片中数据的结束位置
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
@@ -105,7 +106,8 @@ PACK_STRUCT_END
    IPH_ID(iphdrA) == IPH_ID(iphdrB)) ? 1 : 0
 
 /* global variables */
-static struct ip_reassdata *reassdatagrams;
+static struct ip_reassdata *reassdatagrams;     //表头
+//定义全局变量，用于记录当前所有重装结构ip_reassdata上连接的pbuf总数
 static u16_t ip_reass_pbufcount;
 
 /* function prototypes */
@@ -123,24 +125,29 @@ ip_reass_tmr(void)
 {
   struct ip_reassdata *r, *prev = NULL;
 
-  r = reassdatagrams;
-  while (r != NULL) {
+  r = reassdatagrams;                                 //指向链表首部
+  while (r != NULL) 
+  {
     /* Decrement the timer. Once it reaches 0,
      * clean up the incomplete fragment assembly */
-    if (r->timer > 0) {
+    if (r->timer > 0)                     //剩余生存时间大于0，则将其减1
+	{
       r->timer--;
       LWIP_DEBUGF(IP_REASS_DEBUG, ("ip_reass_tmr: timer dec %"U16_F"\n",(u16_t)r->timer));
-      prev = r;
-      r = r->next;
-    } else {
+      prev = r;                           //prev 指向当前重装结构体ip_ressdata
+      r = r->next;                        //r 指向下一个重装结构体ip_reassdata
+    } 
+	else             
+	{
+      //剩余生存时间为0，则 :
       /* reassembly timed out */
-      struct ip_reassdata *tmp;
+      struct ip_reassdata *tmp;         //指向当前需要释放的 ip_reassdata 结构
       LWIP_DEBUGF(IP_REASS_DEBUG, ("ip_reass_tmr: timer timed out\n"));
       tmp = r;
       /* get the next pointer before freeing */
-      r = r->next;
+      r = r->next;                      //r指向下一个重装结构体ip_reassdata
       /* free the helper struct and all enqueued pbufs */
-      ip_reass_free_complete_datagram(tmp, prev);
+      ip_reass_free_complete_datagram(tmp, prev);    //释放当前结构及其上的所有pbuf
      }
    }
 }
@@ -327,6 +334,10 @@ ip_reass_dequeue_datagram(struct ip_reassdata *ipr, struct ip_reassdata *prev)
  * @param new_p points to the pbuf for the current fragment
  * @return 0 if invalid, >0 otherwise
  */
+ //函数功能 : 将分片插入到ip_reassdata的重装链表，并检查是否已收到数据报的所有分片
+ //参数ipr  : 数据报重装的ip_reassdata结构指针
+ //参数 new_p: 分片数据报pbuf指针
+ //返回值  : 若与分片相关的数据报所有分组都已收到，则返回1，否则返回0
 static int
 ip_reass_chain_frag_into_datagram_and_validate(struct ip_reassdata *ipr, struct pbuf *new_p)
 {
@@ -334,31 +345,34 @@ ip_reass_chain_frag_into_datagram_and_validate(struct ip_reassdata *ipr, struct 
   struct pbuf *q;
   u16_t offset,len;
   struct ip_hdr *fraghdr;
-  int valid = 1;
+  int valid = 1;                        //标志是否所有分片都已收到
 
   /* Extract length and fragment offset from current fragment */
-  fraghdr = (struct ip_hdr*)new_p->payload; 
-  len = ntohs(IPH_LEN(fraghdr)) - IPH_HL(fraghdr) * 4;
-  offset = (ntohs(IPH_OFFSET(fraghdr)) & IP_OFFMASK) * 8;
+  fraghdr = (struct ip_hdr*)new_p->payload;                      //指向分片的首部区域
+  len = ntohs(IPH_LEN(fraghdr)) - IPH_HL(fraghdr) * 4;           //分片中数据的总长度
+  offset = (ntohs(IPH_OFFSET(fraghdr)) & IP_OFFMASK) * 8;        //分片在数据报中的起始位置
 
   /* overwrite the fragment's ip header from the pbuf with our helper struct,
    * and setup the embedded helper structure. */
   /* make sure the struct ip_reass_helper fits into the IP header */
   LWIP_ASSERT("sizeof(struct ip_reass_helper) <= IP_HLEN",
               sizeof(struct ip_reass_helper) <= IP_HLEN);
+  //将分片首部前8个字节强制转换为ip_reass_helper结构，用于重装过程
   iprh = (struct ip_reass_helper*)new_p->payload;
-  iprh->next_pbuf = NULL;
-  iprh->start = offset;
-  iprh->end = offset + len;
+  iprh->next_pbuf = NULL;                           //指向下一个分片结构
+  iprh->start = offset;                             //分片中数据在整个数据报中的起始位置
+  iprh->end = offset + len;                         //分片中数据在整个数据报中的结束位置
 
   /* Iterate through until we either get to the end of the list (append),
    * or we find on with a larger offset (insert). */
-  for (q = ipr->p; q != NULL;) {
-    iprh_tmp = (struct ip_reass_helper*)q->payload;
-    if (iprh->start < iprh_tmp->start) {
+   //现在我们要遍历ip_reassdata结构的重装链表，为分片查找一个合适的位置
+   //在整个过程中，我们要设置valid的值，以判断数据报所有的分片接收状况
+  for (q = ipr->p; q != NULL;) {                      //从第一个分片开始
+    iprh_tmp = (struct ip_reass_helper*)q->payload;     //当前分片的ip_reass_helper结构
+    if (iprh->start < iprh_tmp->start) {                //如果新分片的数据起始位置更低，则找到位置了
       /* the new pbuf should be inserted before this */
-      iprh->next_pbuf = q;
-      if (iprh_prev != NULL) {
+      iprh->next_pbuf = q;                              //新分片的next_pbuf指针指向p
+      if (iprh_prev != NULL) {                          //当前分片不是第一个分片
         /* not the fragment with the lowest offset */
 #if IP_REASS_CHECK_OVERLAP
         if ((iprh->start < iprh_prev->end) || (iprh->end > iprh_tmp->start)) {
@@ -366,81 +380,83 @@ ip_reass_chain_frag_into_datagram_and_validate(struct ip_reassdata *ipr, struct 
           goto freepbuf;
         }
 #endif /* IP_REASS_CHECK_OVERLAP */
-        iprh_prev->next_pbuf = new_p;
-      } else {
+        iprh_prev->next_pbuf = new_p;         //则其前一个分片的next_pbuf指向new_p
+      } else {                                //当前分片是第一个分片，则ip_reassdata结构的p指针指向新分片
         /* fragment with the lowest offset */
         ipr->p = new_p;
       }
-      break;
-    } else if(iprh->start == iprh_tmp->start) {
+      break;                                  //插入完毕，跳出
+    } else if(iprh->start == iprh_tmp->start) {    //两分片数据起始位置重叠，则分片是多余的
       /* received the same datagram twice: no need to keep the datagram */
-      goto freepbuf;
+      goto freepbuf;                            //调到freepbuf处删除分片，并退出
 #if IP_REASS_CHECK_OVERLAP
     } else if(iprh->start < iprh_tmp->end) {
       /* overlap: no need to keep the new datagram */
       goto freepbuf;
 #endif /* IP_REASS_CHECK_OVERLAP */
-    } else {
+    } else {                                        //到这里判断新分片的插入位置应该在当前分片位置之后的某处
       /* Check if the fragments received so far have no wholes. */
-      if (iprh_prev != NULL) {
-        if (iprh_prev->end != iprh_tmp->start) {
+      if (iprh_prev != NULL) {                   //判断当前分片与前一个分片的数据是否为连续的
+        if (iprh_prev->end != iprh_tmp->start) {       //不连续，说明还有分片未收到，valid=0
           /* There is a fragment missing between the current
            * and the previous fragment */
           valid = 0;
         }
       }
     }
-    q = iprh_tmp->next_pbuf;
-    iprh_prev = iprh_tmp;
+    q = iprh_tmp->next_pbuf;                        //指向链表的下一个分片
+    iprh_prev = iprh_tmp;                           //记录当前分片
   }
 
   /* If q is NULL, then we made it to the end of the list. Determine what to do now */
+  //判断插入工作是否完成，即q是否为空，若为空，将新分片插入到链表尾部
   if (q == NULL) {
-    if (iprh_prev != NULL) {
+    if (iprh_prev != NULL) {                       //iprh_prev已指向链表中的最后一个分片
       /* this is (for now), the fragment with the highest offset:
        * chain it to the last fragment */
 #if IP_REASS_CHECK_OVERLAP
       LWIP_ASSERT("check fragments don't overlap", iprh_prev->end <= iprh->start);
 #endif /* IP_REASS_CHECK_OVERLAP */
-      iprh_prev->next_pbuf = new_p;
-      if (iprh_prev->end != iprh->start) {
-        valid = 0;
+      iprh_prev->next_pbuf = new_p;                 //新分片插入到链表尾部
+      if (iprh_prev->end != iprh->start) {           //如果最后一个分片和新分片的数据不连续
+        valid = 0;                                  //则还有分组未接收到
       }
-    } else {
+    } else {                                       //链表中没有任何分片
 #if IP_REASS_CHECK_OVERLAP
       LWIP_ASSERT("no previous fragment, this must be the first fragment!",
         ipr->p == NULL);
 #endif /* IP_REASS_CHECK_OVERLAP */
       /* this is the first fragment we ever received for this ip datagram */
-      ipr->p = new_p;
+      ipr->p = new_p;                               //新分片成为重装链表的第一个分片
     }
   }
 
   /* At this point, the validation part begins: */
   /* If we already received the last fragment */
-  if ((ipr->flags & IP_REASS_FLAG_LASTFRAG) != 0) {
+  //这里，判断数据报的所有分片是否已经收到
+  if ((ipr->flags & IP_REASS_FLAG_LASTFRAG) != 0) { //先判断最后一个分片是否收到
     /* and had no wholes so far */
-    if (valid) {
+    if (valid) {                  //最后一个分片已经收到，且分片数据仍然连续
       /* then check if the rest of the fragments is here */
       /* Check if the queue starts with the first datagram */
-      if (((struct ip_reass_helper*)ipr->p->payload)->start != 0) {
+      if (((struct ip_reass_helper*)ipr->p->payload)->start != 0) {  //判断第一个分片是否收到
         valid = 0;
-      } else {
+      } else {                    //第一个分片也已经收到
         /* and check that there are no wholes after this datagram */
-        iprh_prev = iprh;
-        q = iprh->next_pbuf;
+        iprh_prev = iprh;         //从新分片的插入位置开始，检查其后的所有分片是否连续
+        q = iprh->next_pbuf;      //指向下一个分片
         while (q != NULL) {
-          iprh = (struct ip_reass_helper*)q->payload;
-          if (iprh_prev->end != iprh->start) {
+          iprh = (struct ip_reass_helper*)q->payload;     //指向分片的ip_reass_helper结构
+          if (iprh_prev->end != iprh->start) {            //如果不连续，跳出循环
             valid = 0;
             break;
           }
-          iprh_prev = iprh;
-          q = iprh->next_pbuf;
+          iprh_prev = iprh;                               //记录当前分片
+          q = iprh->next_pbuf;                            //获得下一个分片
         }
         /* if still valid, all fragments are received
          * (because to the MF==0 already arrived */
-        if (valid) {
+        if (valid) {                                    
           LWIP_ASSERT("sanity check", ipr->p != NULL);
           LWIP_ASSERT("sanity check",
             ((struct ip_reass_helper*)ipr->p->payload) != iprh);
@@ -454,15 +470,15 @@ ip_reass_chain_frag_into_datagram_and_validate(struct ip_reassdata *ipr, struct 
     /* If valid is 0 here, there are some fragments missing in the middle
      * (since MF == 0 has already arrived). Such datagrams simply time out if
      * no more fragments are received... */
-    return valid;
+    return valid;                                             //返回valid的值
   }
   /* If we come here, not all fragments were received, yet! */
-  return 0; /* not yet valid! */
+  return 0; /* not yet valid! */                        //数据报最后一个分组还未收到，直接返回0
 #if IP_REASS_CHECK_OVERLAP
 freepbuf:
-  ip_reass_pbufcount -= pbuf_clen(new_p);
-  pbuf_free(new_p);
-  return 0;
+  ip_reass_pbufcount -= pbuf_clen(new_p);              //减少全局变量的值
+  pbuf_free(new_p);                                    //释放分片数据报pbuf
+  return 0;                                            //返回0
 #endif /* IP_REASS_CHECK_OVERLAP */
 }
 
@@ -472,37 +488,44 @@ freepbuf:
  * @param p points to a pbuf chain of the fragment
  * @return NULL if reassembly is incomplete, ? otherwise
  */
+ //函数功能 : 重装分片数据报
+ //输入参数 : 分片数据报pbuf
+ //输出参数 : 若某个数据报组装完成，则返回它的pbuf首指针；否则返回NULL
 struct pbuf *
 ip_reass(struct pbuf *p)
 {
-  struct pbuf *r;
-  struct ip_hdr *fraghdr;
-  struct ip_reassdata *ipr;
-  struct ip_reass_helper *iprh;
-  u16_t offset, len;
-  u8_t clen;
-  struct ip_reassdata *ipr_prev = NULL;
+  struct pbuf *r;                                //pbuf型指针
+  struct ip_hdr *fraghdr;                        //IP首部型指针
+  struct ip_reassdata *ipr;                      //重装结构指针
+  struct ip_reass_helper *iprh;                  //重装helper指针
+  u16_t offset, len;                             //记录分片的偏移量和分片中的数据长度
+  u8_t clen;                                     //记录分片占用的pbuf个数
+  struct ip_reassdata *ipr_prev = NULL;          //记录前一个重装结构
 
   IPFRAG_STATS_INC(ip_frag.recv);
   snmp_inc_ipreasmreqds();
 
-  fraghdr = (struct ip_hdr*)p->payload;
+  fraghdr = (struct ip_hdr*)p->payload;          //得到分片数据报首部
 
-  if ((IPH_HL(fraghdr) * 4) != IP_HLEN) {
+  if ((IPH_HL(fraghdr) * 4) != IP_HLEN) {        //若首部长度不为20，则调到nullreturn处
     LWIP_DEBUGF(IP_REASS_DEBUG,("ip_reass: IP options currently not supported!\n"));
     IPFRAG_STATS_INC(ip_frag.err);
     goto nullreturn;
   }
 
-  offset = (ntohs(IPH_OFFSET(fraghdr)) & IP_OFFMASK) * 8;
-  len = ntohs(IPH_LEN(fraghdr)) - IPH_HL(fraghdr) * 4;
+  offset = (ntohs(IPH_OFFSET(fraghdr)) & IP_OFFMASK) * 8;   //得到分片偏移量(字节) 
+  len = ntohs(IPH_LEN(fraghdr)) - IPH_HL(fraghdr) * 4;      //得到分片数据长度
+                                                            
+  /* Check if we are allowed to enqueue more datagrams. */  
+  clen = pbuf_clen(p);                                      //计算分片占用的pbuf数
 
-  /* Check if we are allowed to enqueue more datagrams. */
-  clen = pbuf_clen(p);
-  if ((ip_reass_pbufcount + clen) > IP_REASS_MAX_PBUFS) {
-#if IP_REASS_FREE_OLDEST
-    if (!ip_reass_remove_oldest_datagram(fraghdr, clen) ||
-        ((ip_reass_pbufcount + clen) > IP_REASS_MAX_PBUFS))
+  //下面判断如果把clen个pbuf加入到重装链表中，则重装过程占用的pbuf总个数
+  //是否超过了系统规定的上限个数 IP_REASS_MAX_PBUFS ,若是，则可以选择释放
+  //年龄最老的ip_reassdata及其上的所有pbuf，再进行判断
+  if ((ip_reass_pbufcount + clen) > IP_REASS_MAX_PBUFS) {     //如果总数超过上限
+#if IP_REASS_FREE_OLDEST 
+    if (!ip_reass_remove_oldest_datagram(fraghdr, clen) ||    //释放最老的重装结构
+        ((ip_reass_pbufcount + clen) > IP_REASS_MAX_PBUFS))   //再判断
 #endif /* IP_REASS_FREE_OLDEST */
     {
       /* No datagram could be freed and still too many pbufs enqueued */
@@ -517,102 +540,112 @@ ip_reass(struct pbuf *p)
 
   /* Look for the datagram the fragment belongs to in the current datagram queue,
    * remembering the previous in the queue for later dequeueing. */
-  for (ipr = reassdatagrams; ipr != NULL; ipr = ipr->next) {
+   //到这里，分片数据报满足了插入到重装链表中的条件，查找其匹配的ip_reassdata结构
+  for (ipr = reassdatagrams; ipr != NULL; ipr = ipr->next) {                 //依次查找
     /* Check if the incoming fragment matches the one currently present
        in the reassembly buffer. If so, we proceed with copying the
        fragment into the buffer. */
-    if (IP_ADDRESSES_AND_ID_MATCH(&ipr->iphdr, fraghdr)) {
+    if (IP_ADDRESSES_AND_ID_MATCH(&ipr->iphdr, fraghdr)) {                   //若匹配
       LWIP_DEBUGF(IP_REASS_DEBUG, ("ip_reass: matching previous fragment ID=%"X16_F"\n",
         ntohs(IPH_ID(fraghdr))));
       IPFRAG_STATS_INC(ip_frag.cachehit);
       break;
     }
-    ipr_prev = ipr;
+    ipr_prev = ipr;               //变量ipr_prev用于记录前一个ip_reassdata结构
   }
 
-  if (ipr == NULL) {
+  if (ipr == NULL) {              //如果未找到匹配的结构，说明这个分片是一个新数据报的分片，为该
   /* Enqueue a new datagram into the datagram queue */
-    ipr = ip_reass_enqueue_new_datagram(fraghdr, clen);
+    ipr = ip_reass_enqueue_new_datagram(fraghdr, clen);//分片新建一个ip_reassdata结构
     /* Bail if unable to enqueue */
-    if(ipr == NULL) {
+    if(ipr == NULL) {                                  //新建失败
       goto nullreturn;
     }
-  } else {
+  } else {                                         //找到匹配的结构，且该分组为某个数据报的第一个分片(片偏移为0)
     if (((ntohs(IPH_OFFSET(fraghdr)) & IP_OFFMASK) == 0) && 
       ((ntohs(IPH_OFFSET(&ipr->iphdr)) & IP_OFFMASK) != 0)) {
       /* ipr->iphdr is not the header from the first fragment, but fraghdr is
        * -> copy fraghdr into ipr->iphdr since we want to have the header
        * of the first fragment (for ICMP time exceeded and later, for copying
        * all options, if supported)*/
+       //则我们将分片的首部拷贝到ip_reassdata结构中记录首部的iphdr字段中
       SMEMCPY(&ipr->iphdr, fraghdr, IP_HLEN);
     }
   }
   /* Track the current number of pbufs current 'in-flight', in order to limit 
   the number of fragments that may be enqueued at any one time */
-  ip_reass_pbufcount += clen;
+  //到这里，经过新建或查找，我们都为分片得到了一个ip_reassdata结构
+  ip_reass_pbufcount += clen;                     //全局变量增加，记录pbuf总个数
 
   /* At this point, we have either created a new entry or pointing 
    * to an existing one */
 
   /* check for 'no more fragments', and update queue entry*/
-  if ((IPH_OFFSET(fraghdr) & PP_NTOHS(IP_MF)) == 0) {
-    ipr->flags |= IP_REASS_FLAG_LASTFRAG;
-    ipr->datagram_len = offset + len;
+  //判断分片是否为数据报的最后一个分片，并设置ip_reassdata结构的相关字段
+  if ((IPH_OFFSET(fraghdr) & PP_NTOHS(IP_MF)) == 0) { //这是最后一个分片
+    ipr->flags |= IP_REASS_FLAG_LASTFRAG;             //设置flags，收到最后一个分片
+    ipr->datagram_len = offset + len;                 //datagram_len设置为数据总长度
     LWIP_DEBUGF(IP_REASS_DEBUG,
      ("ip_reass: last fragment seen, total len %"S16_F"\n",
       ipr->datagram_len));
   }
   /* find the right place to insert this pbuf */
   /* @todo: trim pbufs if fragments are overlapping */
-  if (ip_reass_chain_frag_into_datagram_and_validate(ipr, p)) {
+  //调用函数将分片插入到重装结构的链表中，同时检查该数据报所有分片是否已到达
+  if (ip_reass_chain_frag_into_datagram_and_validate(ipr, p)) {   //若所有分片已到达
     /* the totally last fragment (flag more fragments = 0) was received at least
      * once AND all fragments are received */
-    ipr->datagram_len += IP_HLEN;
+    ipr->datagram_len += IP_HLEN;               //datagram_len设置为数据报总长度
 
     /* save the second pbuf before copying the header over the pointer */
-    r = ((struct ip_reass_helper*)ipr->p->payload)->next_pbuf;
+    r = ((struct ip_reass_helper*)ipr->p->payload)->next_pbuf;   //r指向第二个分片pbuf
 
     /* copy the original ip header back to the first pbuf */
-    fraghdr = (struct ip_hdr*)(ipr->p->payload);
-    SMEMCPY(fraghdr, &ipr->iphdr, IP_HLEN);
-    IPH_LEN_SET(fraghdr, htons(ipr->datagram_len));
-    IPH_OFFSET_SET(fraghdr, 0);
-    IPH_CHKSUM_SET(fraghdr, 0);
+    fraghdr = (struct ip_hdr*)(ipr->p->payload);                 //指向第一个分片的首部
+    SMEMCPY(fraghdr, &ipr->iphdr, IP_HLEN);                      //将IP首部拷贝到第一个分片中
+    IPH_LEN_SET(fraghdr, htons(ipr->datagram_len));              //设置总长度字段
+    IPH_OFFSET_SET(fraghdr, 0);                                  //IP分片相关的字段全部清0
+    IPH_CHKSUM_SET(fraghdr, 0);                                  //校验和字段清0
     /* @todo: do we need to set calculate the correct checksum? */
-    IPH_CHKSUM_SET(fraghdr, inet_chksum(fraghdr, IP_HLEN));
+    IPH_CHKSUM_SET(fraghdr, inet_chksum(fraghdr, IP_HLEN));      //计算填写校验和
 
-    p = ipr->p;
+    p = ipr->p;                  //指向第一个分片，即重装后的数据报起始pbuf
 
     /* chain together the pbufs contained within the reass_data list. */
-    while(r != NULL) {
-      iprh = (struct ip_reass_helper*)r->payload;
+    while(r != NULL) {        //从第二个分片开始，调整各个分片pbuf的payload指针
+      iprh = (struct ip_reass_helper*)r->payload;     //分片中helper结构的起始处
 
       /* hide the ip header for every succeding fragment */
-      pbuf_header(r, -IP_HLEN);
-      pbuf_cat(p, r);
-      r = iprh->next_pbuf;
+      pbuf_header(r, -IP_HLEN);                       //调整payload指针，隐藏分片中的IP首部
+      pbuf_cat(p, r);                                 //连接两个分片的pbuf
+      r = iprh->next_pbuf;                            //r指向下一个分片起始pbuf
     }
+
     /* release the sources allocate for the fragment queue entry */
-    ip_reass_dequeue_datagram(ipr, ipr_prev);
+    //到这里，整个数据报的重装工作就完成了，此时需要删除链表reassdatagrams中与
+    //数据报对应的ip_reassdata结构，并将数据报pbuf指针返回
+    ip_reass_dequeue_datagram(ipr, ipr_prev);   //从链表中删除ip_reassddata结构
 
     /* and adjust the number of pbufs currently queued for reassembly. */
-    ip_reass_pbufcount -= pbuf_clen(p);
+    ip_reass_pbufcount -= pbuf_clen(p);        //减少全局变量值
 
     /* Return the pbuf chain */
-    return p;
+    return p;                                  //返回重装好的数据报pbuf
   }
   /* the datagram is not (yet?) reassembled completely */
   LWIP_DEBUGF(IP_REASS_DEBUG,("ip_reass_pbufcount: %d out\n", ip_reass_pbufcount));
-  return NULL;
+  return NULL;                  //这里说明数据报还有分片未收到，返回NULL
 
-nullreturn:
+nullreturn:                      //数据报错误或重装条件不满足
   LWIP_DEBUGF(IP_REASS_DEBUG,("ip_reass: nullreturn\n"));
   IPFRAG_STATS_INC(ip_frag.drop);
-  pbuf_free(p);
-  return NULL;
+  pbuf_free(p);                  //删除数据报pbuf
+  return NULL;                   //返回NULL
 }
 #endif /* IP_REASSEMBLY */
 
+//定义一个全局型的数组，数组大小为IP层允许的最大分片大小，每个分片会被先后
+//拷贝到这个数组中，然后发送
 #if IP_FRAG
 #if IP_FRAG_USES_STATIC_BUF
 static u8_t buf[LWIP_MEM_ALIGN_SIZE(IP_FRAG_MAX_MTU + MEM_ALIGNMENT - 1)];
@@ -663,25 +696,29 @@ ipfrag_free_pbuf_custom(struct pbuf *p)
  *
  * @return ERR_OK if sent successfully, err_t otherwise
  */
+//函数功能  : 将数据报P进行分片发送，该函数在ip_output_if中被调用
+//参数p     : 需要分配发送的数据报
+//参数netif : 发送数据报的网络接口结构指针
+//参数dest  : 目的IP地址
 err_t 
 ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
 {
-  struct pbuf *rambuf;
-#if IP_FRAG_USES_STATIC_BUF
-  struct pbuf *header;
+  struct pbuf *rambuf;                    //分片的pbuf结构
+#if IP_FRAG_USES_STATIC_BUF 
+  struct pbuf *header;                    //以太网帧pbuf
 #else
 #if !LWIP_NETIF_TX_SINGLE_PBUF
   struct pbuf *newpbuf;
 #endif
   struct ip_hdr *original_iphdr;
 #endif
-  struct ip_hdr *iphdr;
-  u16_t nfb;
-  u16_t left, cop;
-  u16_t mtu = netif->mtu;
-  u16_t ofo, omf;
-  u16_t last;
-  u16_t poff = IP_HLEN;
+  struct ip_hdr *iphdr;                   //IP首部指针
+  u16_t nfb;                              //分片中允许的最大数据量
+  u16_t left, cop;                        //待发送的数据长度和当前发送的数据长度
+  u16_t mtu = netif->mtu;                 //网络接口mtu
+  u16_t ofo, omf;                         //分片偏移量和更多分片位
+  u16_t last;                             //是否为最后一个分片
+  u16_t poff = IP_HLEN;                   //发送的数据的原始数据报pbuf中的偏移量
   u16_t tmp;
 #if !IP_FRAG_USES_STATIC_BUF && !LWIP_NETIF_TX_SINGLE_PBUF
   u16_t newpbuflen = 0;
@@ -694,49 +731,52 @@ ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
    * use to reference the packet (without link header).
    * Layer and length is irrelevant.
    */
-  rambuf = pbuf_alloc(PBUF_LINK, 0, PBUF_REF);
-  if (rambuf == NULL) {
+  rambuf = pbuf_alloc(PBUF_LINK, 0, PBUF_REF);    //为数据分片申请一个pbuf结构
+  if (rambuf == NULL) {                           //申请失败，则返回
     LWIP_DEBUGF(IP_REASS_DEBUG, ("ip_frag: pbuf_alloc(PBUF_LINK, 0, PBUF_REF) failed\n"));
     return ERR_MEM;
   }
-  rambuf->tot_len = rambuf->len = mtu;
-  rambuf->payload = LWIP_MEM_ALIGN((void *)buf);
+  rambuf->tot_len = rambuf->len = mtu;             //设置pbuf的len和tot_len字段为接口的MTU值
+  rambuf->payload = LWIP_MEM_ALIGN((void *)buf);   //payload指向全局数据区域
 
   /* Copy the IP header in it */
-  iphdr = (struct ip_hdr *)rambuf->payload;
-  SMEMCPY(iphdr, p->payload, IP_HLEN);
+  iphdr = (struct ip_hdr *)rambuf->payload;        //得到分片包存储区域
+  SMEMCPY(iphdr, p->payload, IP_HLEN);             //把原始数据报首部拷贝到分片的首部
 #else /* IP_FRAG_USES_STATIC_BUF */
   original_iphdr = (struct ip_hdr *)p->payload;
   iphdr = original_iphdr;
 #endif /* IP_FRAG_USES_STATIC_BUF */
 
   /* Save original offset */
-  tmp = ntohs(IPH_OFFSET(iphdr));
-  ofo = tmp & IP_OFFMASK;
-  omf = tmp & IP_MF;
+  tmp = ntohs(IPH_OFFSET(iphdr));                 //暂存分片的相关字段
+  ofo = tmp & IP_OFFMASK;                         //得到分片偏移量(对原始数据报来说应该为0)
+  omf = tmp & IP_MF;                              //得到更多分片标志值
 
-  left = p->tot_len - IP_HLEN;
+  left = p->tot_len - IP_HLEN;                    //待发送数据长度(总长度 - IP首部长度)
 
-  nfb = (mtu - IP_HLEN) / 8;
+  nfb = (mtu - IP_HLEN) / 8;                      //一个分片中可以存放的最大数据量(8字节为单位)
 
-  while (left) {
-    last = (left <= mtu - IP_HLEN);
+  while (left) {                                  //待发送数据长度大于0
+    last = (left <= mtu - IP_HLEN);               //若待发送长度小于分片最大长度，last为1，否则为0
 
     /* Set new offset and MF flag */
-    tmp = omf | (IP_OFFMASK & (ofo));
-    if (!last) {
-      tmp = tmp | IP_MF;
+    tmp = omf | (IP_OFFMASK & (ofo));             //计算分片相关字段
+    if (!last) {                                  //如果不是最后一个分片
+      tmp = tmp | IP_MF;                          //则更多分片位置1
     }
 
+    //计算分片中的数据长度，当last为1时，说明分片能装下所有剩余数据
     /* Fill this fragment */
     cop = last ? left : nfb * 8;
 
 #if IP_FRAG_USES_STATIC_BUF
+    //从原始数据报中拷贝cop字节的数据到分片中，poff记录了拷贝的起始位置
     poff += pbuf_copy_partial(p, (u8_t*)iphdr + IP_HLEN, cop, poff);
 #else /* IP_FRAG_USES_STATIC_BUF */
 #if LWIP_NETIF_TX_SINGLE_PBUF
     rambuf = pbuf_alloc(PBUF_IP, cop, PBUF_RAM);
-    if (rambuf == NULL) {
+    if (rambuf == NULL) 
+	{
       return ERR_MEM;
     }
     LWIP_ASSERT("this needs a pbuf in one piece!",
@@ -808,13 +848,13 @@ ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
 #endif /* IP_FRAG_USES_STATIC_BUF */
 
     /* Correct header */
-    IPH_OFFSET_SET(iphdr, htons(tmp));
-    IPH_LEN_SET(iphdr, htons(cop + IP_HLEN));
-    IPH_CHKSUM_SET(iphdr, 0);
-    IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));
+    IPH_OFFSET_SET(iphdr, htons(tmp));                       //填写分片相关字段
+    IPH_LEN_SET(iphdr, htons(cop + IP_HLEN));                //填写总长度
+    IPH_CHKSUM_SET(iphdr, 0);                                //清0校验和
+    IPH_CHKSUM_SET(iphdr, inet_chksum(iphdr, IP_HLEN));      //计算校验和
 
 #if IP_FRAG_USES_STATIC_BUF
-    if (last) {
+    if (last) {                                              //若为最后一个分片，则更改pbuf的len和tot_len字段
       pbuf_realloc(rambuf, left + IP_HLEN);
     }
 
@@ -823,23 +863,27 @@ ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
      * free it.A PBUF_ROM style pbuf for which pbuf_header
      * worked would make things simpler.
      */
+     //到这里 我们组装好了一个完整的分片，需要将该分片发送出去，这里重新在
+     //内存堆中开辟一个pbuf空间，用来保存以太网帧首部
     header = pbuf_alloc(PBUF_LINK, 0, PBUF_RAM);
-    if (header != NULL) {
-      pbuf_chain(header, rambuf);
-      netif->output(netif, header, dest);
+    if (header != NULL) {                         //申请成功，则做发送工作
+      pbuf_chain(header, rambuf);                 //将两个pbuf连接成一个pbuf链表
+      netif->output(netif, header, dest);         //调用函数发送
       IPFRAG_STATS_INC(ip_frag.xmit);
       snmp_inc_ipfragcreates();
-      pbuf_free(header);
-    } else {
+      pbuf_free(header);                           //发送完成后，释放pbuf链表
+    } 
+	else                                           //若以太网首部空间申请失败
+    {
       LWIP_DEBUGF(IP_REASS_DEBUG, ("ip_frag: pbuf_alloc() for header failed\n"));
-      pbuf_free(rambuf);
-      return ERR_MEM;
+      pbuf_free(rambuf);                           //释放结构rambuf
+      return ERR_MEM;                              //返回内存错误
     }
 #else /* IP_FRAG_USES_STATIC_BUF */
     /* No need for separate header pbuf - we allowed room for it in rambuf
      * when allocated.
      */
-    netif->output(netif, rambuf, dest);
+    netif->output(netif, rambuf, dest);            //完成发送工作
     IPFRAG_STATS_INC(ip_frag.xmit);
 
     /* Unfortunately we can't reuse rambuf - the hardware may still be
@@ -851,13 +895,13 @@ ip_frag(struct pbuf *p, struct netif *netif, ip_addr_t *dest)
     
     pbuf_free(rambuf);
 #endif /* IP_FRAG_USES_STATIC_BUF */
-    left -= cop;
-    ofo += nfb;
+    left -= cop;                                    //待发送的总长度减少
+    ofo += nfb;                                     //分片偏移量增加
   }
 #if IP_FRAG_USES_STATIC_BUF
-  pbuf_free(rambuf);
+  pbuf_free(rambuf);                                //释放结构rambuf
 #endif /* IP_FRAG_USES_STATIC_BUF */
   snmp_inc_ipfragoks();
-  return ERR_OK;
+  return ERR_OK;                                    //返回OK
 }
 #endif /* IP_FRAG */

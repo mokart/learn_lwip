@@ -41,8 +41,8 @@
 #include "lwip/netif.h"
 
 /* used by IP_ADDR_ANY and IP_ADDR_BROADCAST in ip_addr.h */
-const ip_addr_t ip_addr_any = { IPADDR_ANY };
-const ip_addr_t ip_addr_broadcast = { IPADDR_BROADCAST };
+const ip_addr_t ip_addr_any = { IPADDR_ANY };                //某些使用规范中，全0也代表所有主机
+const ip_addr_t ip_addr_broadcast = { IPADDR_BROADCAST };    //全1，受限广播地址
 
 /**
  * Determine if an address is a broadcast address on a network interface 
@@ -51,31 +51,35 @@ const ip_addr_t ip_addr_broadcast = { IPADDR_BROADCAST };
  * @param netif the network interface against which the address is checked
  * @return returns non-zero if the address is a broadcast address
  */
+ //函数功能 : 判断一个目的IP地址是否是广播地址
+ //参数 netif : 本地网络接口结构
+ //返回值 : 是广播地址则返回非0值
 u8_t
 ip4_addr_isbroadcast(u32_t addr, const struct netif *netif)
 {
   ip_addr_t ipaddr;
-  ip4_addr_set_u32(&ipaddr, addr);
+  ip4_addr_set_u32(&ipaddr, addr);                                //取得IP地址结构中的32位整数
 
   /* all ones (broadcast) or all zeroes (old skool broadcast) */
-  if ((~addr == IPADDR_ANY) ||
+  if ((~addr == IPADDR_ANY) ||                                    //如果32位为全0或者全1
       (addr == IPADDR_ANY)) {
-    return 1;
+    return 1;                                                     //返回非0值
   /* no broadcast support on this network interface? */
-  } else if ((netif->flags & NETIF_FLAG_BROADCAST) == 0) {
+  //判断是否为受限广播
+  } else if ((netif->flags & NETIF_FLAG_BROADCAST) == 0) {        //如果网络接口不支持广播
     /* the given address cannot be a broadcast address
      * nor can we check against any broadcast addresses */
-    return 0;
+    return 0;                                                     //则上层应用不应该出现广播地址，直接返回0
   /* address matches network interface address exactly? => no broadcast */
-  } else if (addr == ip4_addr_get_u32(&netif->ip_addr)) {
-    return 0;
+  } else if (addr == ip4_addr_get_u32(&netif->ip_addr)) {    //如果目的IP地址和本接口的IP地址一样
+    return 0;                                                //也不是广播地址
   /*  on the same (sub) network... */
-  } else if (ip_addr_netcmp(&ipaddr, &(netif->ip_addr), &(netif->netmask))
+  } else if (ip_addr_netcmp(&ipaddr, &(netif->ip_addr), &(netif->netmask))//同一网段
          /* ...and host identifier bits are all ones? =>... */
-          && ((addr & ~ip4_addr_get_u32(&netif->netmask)) ==
+          && ((addr & ~ip4_addr_get_u32(&netif->netmask)) ==               //且主机全部为0
            (IPADDR_BROADCAST & ~ip4_addr_get_u32(&netif->netmask)))) {
     /* => network broadcast address */
-    return 1;
+    return 1;                                  //返回非0值
   } else {
     return 0;
   }

@@ -46,18 +46,18 @@ extern "C" {
 
 #if IP_REASSEMBLY
 /* The IP reassembly timer interval in milliseconds. */
-#define IP_TMR_INTERVAL 1000
+#define IP_TMR_INTERVAL 1000         //通常1秒钟
 
 /* IP reassembly helper struct.
  * This is exported because memp needs to know the size.
  */
 struct ip_reassdata {
-  struct ip_reassdata *next;
-  struct pbuf *p;
-  struct ip_hdr iphdr;
-  u16_t datagram_len;
-  u8_t flags;
-  u8_t timer;
+  struct ip_reassdata *next;         //用于构建单向链表的指针
+  struct pbuf *p;                    //该数据报的数据链表
+  struct ip_hdr iphdr;               //该数据报的IP首部
+  u16_t datagram_len;                //已经收到的数据报长度
+  u8_t flags;                        //是否收到最后一个分片
+  u8_t timer;                        //设置超时间隔  计数器  定时事件会周期性的对timer减一
 };
 
 void ip_reass_init(void);

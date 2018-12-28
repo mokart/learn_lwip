@@ -112,47 +112,52 @@ struct ip_pcb {
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
 #endif
-PACK_STRUCT_BEGIN
-struct ip_hdr {
+
+//IP头的结构
+PACK_STRUCT_BEGIN                                     //禁止编译器自对齐
+struct ip_hdr { 
   /* version / header length */
-  PACK_STRUCT_FIELD(u8_t _v_hl);
+  PACK_STRUCT_FIELD(u8_t _v_hl);              //前三个字段 : 版本号+首部长度
   /* type of service */
-  PACK_STRUCT_FIELD(u8_t _tos);
+  PACK_STRUCT_FIELD(u8_t _tos);               //服务类型
   /* total length */
-  PACK_STRUCT_FIELD(u16_t _len);
+  PACK_STRUCT_FIELD(u16_t _len);             //总长度
   /* identification */
-  PACK_STRUCT_FIELD(u16_t _id);
+  PACK_STRUCT_FIELD(u16_t _id);              //标识字段
   /* fragment offset field */
-  PACK_STRUCT_FIELD(u16_t _offset);
-#define IP_RF 0x8000U        /* reserved fragment flag */
-#define IP_DF 0x4000U        /* dont fragment flag */
-#define IP_MF 0x2000U        /* more fragments flag */
-#define IP_OFFMASK 0x1fffU   /* mask for fragmenting bits */
+  PACK_STRUCT_FIELD(u16_t _offset);          //3位标识位和13位片偏移字段
+#define IP_RF 0x8000U        /* reserved fragment flag */ //标识位第一位(保留位)掩码
+#define IP_DF 0x4000U        /* dont fragment flag */     //标识位第二位(不分片标志)掩码
+#define IP_MF 0x2000U        /* more fragments flag */    //标志位第三位(更多分片位)掩码
+#define IP_OFFMASK 0x1fffU   /* mask for fragmenting bits */  //13位片偏移字段的掩码
   /* time to live */
-  PACK_STRUCT_FIELD(u8_t _ttl);
+  PACK_STRUCT_FIELD(u8_t _ttl);     //TTL字段
   /* protocol*/
-  PACK_STRUCT_FIELD(u8_t _proto);
+  PACK_STRUCT_FIELD(u8_t _proto);   //协议字段
   /* checksum */
-  PACK_STRUCT_FIELD(u16_t _chksum);
+  PACK_STRUCT_FIELD(u16_t _chksum);  //首部校验和字段
   /* source and destination IP addresses */
-  PACK_STRUCT_FIELD(ip_addr_p_t src);
-  PACK_STRUCT_FIELD(ip_addr_p_t dest); 
+  PACK_STRUCT_FIELD(ip_addr_p_t src);   //源IP地址
+  PACK_STRUCT_FIELD(ip_addr_p_t dest);  //目的IP地址
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
 
-#define IPH_V(hdr)  ((hdr)->_v_hl >> 4)
-#define IPH_HL(hdr) ((hdr)->_v_hl & 0x0f)
-#define IPH_TOS(hdr) ((hdr)->_tos)
-#define IPH_LEN(hdr) ((hdr)->_len)
-#define IPH_ID(hdr) ((hdr)->_id)
-#define IPH_OFFSET(hdr) ((hdr)->_offset)
-#define IPH_TTL(hdr) ((hdr)->_ttl)
-#define IPH_PROTO(hdr) ((hdr)->_proto)
-#define IPH_CHKSUM(hdr) ((hdr)->_chksum)
+//下面定义了几个宏，用于对IP首部中各个字段值的读取
+#define IPH_V(hdr)  ((hdr)->_v_hl >> 4)         //获取版本号
+#define IPH_HL(hdr) ((hdr)->_v_hl & 0x0f)       //获取首部长度
+#define IPH_TOS(hdr) ((hdr)->_tos)              //获取服务类型
+#define IPH_LEN(hdr) ((hdr)->_len)              //获取数据报总长度(网络字节序)
+#define IPH_ID(hdr) ((hdr)->_id)                //获取数据报标识字段(网络字节序)
+#define IPH_OFFSET(hdr) ((hdr)->_offset)        //获取标识位 + 片偏移字段(网络字节序)
+#define IPH_TTL(hdr) ((hdr)->_ttl)              //获取TTL字段
+#define IPH_PROTO(hdr) ((hdr)->_proto)          //获取协议字段
+#define IPH_CHKSUM(hdr) ((hdr)->_chksum)        //获取首部校验和字段(网络字节序)
 
+//下面定义几个宏，用于填写IP首部各个字段的值，宏变量hdr为指向
+//IP首部结构ip_hdr型变量的指针
 #define IPH_VHL_SET(hdr, v, hl) (hdr)->_v_hl = (((v) << 4) | (hl))
 #define IPH_TOS_SET(hdr, tos) (hdr)->_tos = (tos)
 #define IPH_LEN_SET(hdr, len) (hdr)->_len = (len)
