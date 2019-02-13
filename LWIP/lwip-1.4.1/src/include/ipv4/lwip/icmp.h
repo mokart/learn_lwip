@@ -41,30 +41,33 @@
 extern "C" {
 #endif
 
-#define ICMP_ER   0    /* echo reply */
-#define ICMP_DUR  3    /* destination unreachable */
-#define ICMP_SQ   4    /* source quench */
-#define ICMP_RD   5    /* redirect */
-#define ICMP_ECHO 8    /* echo */
-#define ICMP_TE  11    /* time exceeded */
-#define ICMP_PP  12    /* parameter problem */
-#define ICMP_TS  13    /* timestamp */
-#define ICMP_TSR 14    /* timestamp reply */
-#define ICMP_IRQ 15    /* information request */
-#define ICMP_IR  16    /* information reply */
+//首先是宏定义，定义常见的ICMP报文类型，如表11-1所示
+#define ICMP_ER   0    /* echo reply */ //回送回答
+#define ICMP_DUR  3    /* destination unreachable *///目的站不可达
+#define ICMP_SQ   4    /* source quench *///源站抑制
+#define ICMP_RD   5    /* redirect *///重定向
+#define ICMP_ECHO 8    /* echo *///回送请求
+#define ICMP_TE  11    /* time exceeded *///数据报超时
+#define ICMP_PP  12    /* parameter problem *///数据报参数错误
+#define ICMP_TS  13    /* timestamp *///时间戳请求
+#define ICMP_TSR 14    /* timestamp reply *///时间戳回答
+#define ICMP_IRQ 15    /* information request *///信息请求
+#define ICMP_IR  16    /* information reply *///信息回答
 
+//枚举类型，定义目的站不可达报文中的代码字段常用取值，如表11-2所示
 enum icmp_dur_type {
-  ICMP_DUR_NET   = 0,  /* net unreachable */
-  ICMP_DUR_HOST  = 1,  /* host unreachable */
-  ICMP_DUR_PROTO = 2,  /* protocol unreachable */
-  ICMP_DUR_PORT  = 3,  /* port unreachable */
-  ICMP_DUR_FRAG  = 4,  /* fragmentation needed and DF set */
-  ICMP_DUR_SR    = 5   /* source route failed */
+  ICMP_DUR_NET   = 0,  /* net unreachable *///网络不可达
+  ICMP_DUR_HOST  = 1,  /* host unreachable *///主机不可达
+  ICMP_DUR_PROTO = 2,  /* protocol unreachable *///协议不可达
+  ICMP_DUR_PORT  = 3,  /* port unreachable *///端口不可达
+  ICMP_DUR_FRAG  = 4,  /* fragmentation needed and DF set *///需要分片但不分片位置位
+  ICMP_DUR_SR    = 5   /* source route failed *///源路由失败
 };
 
+//枚举类型，定义数据报超时报文中的代码字段取值，如表11-3所示
 enum icmp_te_type {
-  ICMP_TE_TTL  = 0,    /* time to live exceeded in transit */
-  ICMP_TE_FRAG = 1     /* fragment reassembly time exceeded */
+  ICMP_TE_TTL  = 0,    /* time to live exceeded in transit *///生存时间计数器超时
+  ICMP_TE_FRAG = 1     /* fragment reassembly time exceeded *///分片重装超时
 };
 
 #ifdef PACK_STRUCT_USE_INCLUDES
@@ -75,23 +78,29 @@ enum icmp_te_type {
  *  This header is also used for other ICMP types that do not
  *  use the data part.
  */
+ //定义ICMP回送请求报文首部结构，由于所有类型ICMP报文首部都有很大的相似性
+ //所以这个结构也可以用于其他类型的ICMP报文
 PACK_STRUCT_BEGIN
-struct icmp_echo_hdr {
-  PACK_STRUCT_FIELD(u8_t type);
-  PACK_STRUCT_FIELD(u8_t code);
-  PACK_STRUCT_FIELD(u16_t chksum);
-  PACK_STRUCT_FIELD(u16_t id);
-  PACK_STRUCT_FIELD(u16_t seqno);
+struct icmp_echo_hdr {                      //参见图11-5
+  PACK_STRUCT_FIELD(u8_t type);    //类型
+  PACK_STRUCT_FIELD(u8_t code);    //代码
+  PACK_STRUCT_FIELD(u16_t chksum); //校验和
+  PACK_STRUCT_FIELD(u16_t id);     //标识符
+  PACK_STRUCT_FIELD(u16_t seqno);  //序号
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
+	
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
 
+//定义两个宏，用于读取ICMP首部中的字段
 #define ICMPH_TYPE(hdr) ((hdr)->type)
 #define ICMPH_CODE(hdr) ((hdr)->code)
 
 /** Combines type and code to an u16_t */
+
+//定义两个宏，用于向ICMP首部字段中写入相应值
 #define ICMPH_TYPE_SET(hdr, t) ((hdr)->type = (t))
 #define ICMPH_CODE_SET(hdr, c) ((hdr)->code = (c))
 

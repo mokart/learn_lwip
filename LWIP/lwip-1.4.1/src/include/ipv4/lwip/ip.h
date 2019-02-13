@@ -73,22 +73,25 @@ extern "C" {
    beginning of a PCB type definition. It is located here so that
    changes to this common part are made in one location instead of
    having to change all PCB structs. */
+   
+//下面定义宏IP_PCB，它是与IP层相关的字段   
 #define IP_PCB \
   /* ip addresses in network byte order */ \
-  ip_addr_t local_ip; \
-  ip_addr_t remote_ip; \
+  ip_addr_t local_ip; \         //本地IP地址
+  ip_addr_t remote_ip; \        //远端IP地址
    /* Socket options */  \
-  u8_t so_options;      \
+  u8_t so_options;      \       //socket选项
    /* Type Of Service */ \
-  u8_t tos;              \
+  u8_t tos;              \      //服务类型
   /* Time To Live */     \
-  u8_t ttl               \
+  u8_t ttl               \      //生存时间(TTL)
   /* link layer address resolution hint */ \
   IP_PCB_ADDRHINT
 
+//定义IP控制块
 struct ip_pcb {
 /* Common members of all PCB types */
-  IP_PCB;
+  IP_PCB;                        //宏IP_PCB相关的字段
 };
 
 /*

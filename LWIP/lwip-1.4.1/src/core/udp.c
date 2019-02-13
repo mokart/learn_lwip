@@ -102,12 +102,12 @@ udp_new_port(void)
   struct udp_pcb *pcb;
   
 again:
-  if (udp_port++ == UDP_LOCAL_PORT_RANGE_END) {
+  if (udp_port++ == UDP_LOCAL_PORT_RANGE_END) {//检查下一个端口号
     udp_port = UDP_LOCAL_PORT_RANGE_START;
   }
   /* Check all PCBs. */
   for(pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) {
-    if (pcb->local_port == udp_port) {
+    if (pcb->local_port == udp_port) {                //如果端口号被当前控制块占用
       if (++n > (UDP_LOCAL_PORT_RANGE_END - UDP_LOCAL_PORT_RANGE_START)) {
         return 0;
       }
@@ -147,25 +147,30 @@ again:
  * @param inp network interface on which the datagram was received.
  *
  */
+ //函数功能 : UDP报文处理函数
+//参数Pbuf : IP层接收到的包含UDP报文的数据报pbuf,payload指针指向IP首部
+//参数inp  : 接收到的IP数据报的网络接口结构
 void
 udp_input(struct pbuf *p, struct netif *inp)
 {
-  struct udp_hdr *udphdr;
-  struct udp_pcb *pcb, *prev;
-  struct udp_pcb *uncon_pcb;
-  struct ip_hdr *iphdr;
-  u16_t src, dest;
-  u8_t local_match;
-  u8_t broadcast;
+  struct udp_hdr *udphdr;                        //UDP报文首部结构
+  struct udp_pcb *pcb, *prev;                    //UDP控制块指针，用于查找过程
+  struct udp_pcb *uncon_pcb;                     //指向第一个匹配的处于非连接状态的控制块
+  struct ip_hdr *iphdr;                          //IP数据报首部结构
+  u16_t src, dest;                               //保存报文中的源端口与目的端口
+  u8_t local_match;                              //控制块是否匹配
+  u8_t broadcast;                                //记录该IP数据报是否为广播数据报
 
   PERF_START;
 
   UDP_STATS_INC(udp.recv);
 
-  iphdr = (struct ip_hdr *)p->payload;
+  iphdr = (struct ip_hdr *)p->payload;           //指向IP数据报首部
 
   /* Check minimum length (IP header + UDP header)
    * and move payload pointer to UDP header */
+//进行长度校验 : 整个数据报的长度不小于IP首部 + UDP首部的大小
+//移动数据报payload指针，使其指向UDP首部
   if (p->tot_len < (IPH_HL(iphdr) * 4 + UDP_HLEN) || pbuf_header(p, -(s16_t)(IPH_HL(iphdr) * 4))) {
     /* drop short packets */
     LWIP_DEBUGF(UDP_DEBUG,
@@ -173,20 +178,20 @@ udp_input(struct pbuf *p, struct netif *inp)
     UDP_STATS_INC(udp.lenerr);
     UDP_STATS_INC(udp.drop);
     snmp_inc_udpinerrors();
-    pbuf_free(p);
-    goto end;
+    pbuf_free(p);             	//如果检验不通过或操作不成功，则释放掉pbuf
+    goto end;                 	//跳到end处，执行返回操作
   }
 
-  udphdr = (struct udp_hdr *)p->payload;
+  udphdr = (struct udp_hdr *)p->payload;        //指向UDP报文首部
 
   /* is broadcast packet ? */
-  broadcast = ip_addr_isbroadcast(&current_iphdr_dest, inp);
+  broadcast = ip_addr_isbroadcast(&current_iphdr_dest, inp);     //判断IP数据报是否为广播
 
   LWIP_DEBUGF(UDP_DEBUG, ("udp_input: received datagram of length %"U16_F"\n", p->tot_len));
 
   /* convert src and dest ports to host byte order */
-  src = ntohs(udphdr->src);
-  dest = ntohs(udphdr->dest);
+  src = ntohs(udphdr->src);                                //取得UDP首部中的源端口号
+  dest = ntohs(udphdr->dest);                              //取得UDP首部中的目的端口号
 
   udp_debug_print(udphdr);
 
@@ -219,15 +224,21 @@ udp_input(struct pbuf *p, struct netif *inp)
   } else
 #endif /* LWIP_DHCP */
   {
-    prev = NULL;
-    local_match = 0;
-    uncon_pcb = NULL;
+
+//下面开始查找匹配的UDP控制块，第一查找目标为与目的端口号和目的IP地址匹配
+//且处于连接状态的控制块，找不到，则查找与目的端口号和目的IP地址匹配的第一个
+//处于非连接状态的控制块
+
+
+    prev = NULL;                          	//指针清空
+    local_match = 0;                      	//当前控制块的匹配情况
+    uncon_pcb = NULL;                    	//第一个匹配的非连接状态控制块
     /* Iterate through the UDP pcb list for a matching pcb.
      * 'Perfect match' pcbs (connected to the remote port & ip address) are
      * preferred. If no perfect match is found, the first unconnected pcb that
      * matches the local port and ip address gets the datagram. */
-    for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) {
-      local_match = 0;
+    for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next) {		//遍历整个控制块链表
+      local_match = 0;                                   	    //当前控制块不匹配
       /* print the PCB local and remote address */
       LWIP_DEBUGF(UDP_DEBUG,
                   ("pcb (%"U16_F".%"U16_F".%"U16_F".%"U16_F", %"U16_F") --- "
@@ -238,7 +249,9 @@ udp_input(struct pbuf *p, struct netif *inp)
                    ip4_addr3_16(&pcb->remote_ip), ip4_addr4_16(&pcb->remote_ip), pcb->remote_port));
 
       /* compare PCB local addr+port to UDP destination addr+port */
-      if (pcb->local_port == dest) {
+	  //先判断控制块中记录的本地端口号、IP地址与数据报中记录的
+      //目的端口号、目的IP地址是否匹配
+      if (pcb->local_port == dest) {                		  //若端口号和IP地址都匹配
         if (
            (!broadcast && ip_addr_isany(&pcb->local_ip)) ||
            ip_addr_cmp(&(pcb->local_ip), &current_iphdr_dest) ||
@@ -254,21 +267,27 @@ udp_input(struct pbuf *p, struct netif *inp)
              (ip_addr_isany(&pcb->local_ip) ||
               ip_addr_netcmp(&pcb->local_ip, ip_current_dest_addr(), &inp->netmask)))) {
 #endif /* IP_SOF_BROADCAST_RECV */ 
-          local_match = 1;
-          if ((uncon_pcb == NULL) && 
+          local_match = 1;           		            //当前控制块匹配
+          if ((uncon_pcb == NULL) &&     			    //若当前控制块为未连接态且uncon_pcb为空
               ((pcb->flags & UDP_FLAGS_CONNECTED) == 0)) {
             /* the first unconnected matching PCB */
-            uncon_pcb = pcb;
+            uncon_pcb = pcb;                			//记录下第一个匹配的非连接态控制块
           }
         }
       }
       /* compare PCB remote addr+port to UDP source addr+port */
-      if ((local_match != 0) &&
-          (pcb->remote_port == src) &&
-          (ip_addr_isany(&pcb->remote_ip) ||
+
+//前阶段匹配成功，则继续匹配控制块中记录的源端口号、源IP地址和数据报
+//中记录的源端口号、源IP地址是否匹配，以找到一个处于连接状态的控制块
+      if ((local_match != 0) &&                 		  //前阶段匹配成功
+          (pcb->remote_port == src) &&          		  //且源端口号匹配
+          (ip_addr_isany(&pcb->remote_ip) ||       		  //且源IP地址匹配
            ip_addr_cmp(&(pcb->remote_ip), &current_iphdr_src))) {
+           //到这里我们得到一个完全匹配的控制块，若控制块不在链表首部，则需
+           //要把该控制块移到链表的首部，这样能提高下次报文处理时的查找效率
+           
         /* the first fully matching PCB */
-        if (prev != NULL) {
+        if (prev != NULL) {                 			 //当前控制块不为链表的首部
           /* move the pcb to the front of udp_pcbs so that is
              found faster next time */
           prev->next = pcb->next;
@@ -277,16 +296,19 @@ udp_input(struct pbuf *p, struct netif *inp)
         } else {
           UDP_STATS_INC(udp.cachehit);
         }
-        break;
+        break;                       		  //跳出for循环，结束查找过程
       }
-      prev = pcb;
+      prev = pcb;                       	  //进行下一个控制块的比较
     }
     /* no fully matching pcb found? then look for an unconnected pcb */
-    if (pcb == NULL) {
-      pcb = uncon_pcb;
+    if (pcb == NULL) {                		  //遍历完链表上的所有控制块，没有找到完全匹配的连接态控制块
+      pcb = uncon_pcb;                  	  //则将第一个匹配的非连接状态控制块作为匹配结果 
     }
   }
 
+  //到这里，如果找到了匹配的控制块，或者找不到控制块，但是数据报确实是给本地的
+  //对于前者调用用户注册的回调函数处理数据，对于后者，为源主机返回一个端口不可达
+  //差错报文，Anyway,先得进行校验和的验证
   /* Check checksum if this is a match or if it was directed at us. */
   if (pcb != NULL || ip_addr_cmp(&inp->ip_addr, &current_iphdr_dest)) {
     LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_input: calculating checksum\n"));
@@ -325,7 +347,7 @@ udp_input(struct pbuf *p, struct netif *inp)
 #endif /* LWIP_UDPLITE */
     {
 #if CHECKSUM_CHECK_UDP
-      if (udphdr->chksum != 0) {
+      if (udphdr->chksum != 0) {          		  //数据报中已经填写了校验和字段，则必须验证
         if (inet_chksum_pseudo(p, ip_current_src_addr(), ip_current_dest_addr(),
                                IP_PROTO_UDP, p->tot_len) != 0) {
           LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
@@ -333,20 +355,23 @@ udp_input(struct pbuf *p, struct netif *inp)
           UDP_STATS_INC(udp.chkerr);
           UDP_STATS_INC(udp.drop);
           snmp_inc_udpinerrors();
-          pbuf_free(p);
+          pbuf_free(p);                 		  //校验和失败，删除数据报，并返回
           goto end;
         }
       }
 #endif /* CHECKSUM_CHECK_UDP */
     }
-    if(pbuf_header(p, -UDP_HLEN)) {
+	//校验和通过，则将报文中的数据递交给用户程序处理，先调整payload指针
+    if(pbuf_header(p, -UDP_HLEN)) {           		//指向报文中的数据区
       /* Can we cope with this failing? Just assert for now */
       LWIP_ASSERT("pbuf_header failed\n", 0);
       UDP_STATS_INC(udp.drop);
       snmp_inc_udpinerrors();
-      pbuf_free(p);
+      pbuf_free(p);                          	  //调整失败，则删除整个数据报
       goto end;
     }
+	
+	//如果有匹配的控制块，则调用控制块中注册的用户函数处理数据
     if (pcb != NULL) {
       snmp_inc_udpindatagrams();
 #if SO_REUSE && SO_REUSE_RXTOALL
@@ -398,34 +423,43 @@ udp_input(struct pbuf *p, struct netif *inp)
       }
 #endif /* SO_REUSE && SO_REUSE_RXTOALL */
       /* callback */
+	  //如果注册了用户处理程序
       if (pcb->recv != NULL) {
         /* now the recv function is responsible for freeing p */
+		//调用用户函数，用户函数要负责报文pbuf的释放
         pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src);
-      } else {
+      } else {		                    //若没有注册用户处理函数
         /* no recv function registered? then we have to free the pbuf! */
-        pbuf_free(p);
+        pbuf_free(p);         		    //释放数据报Pbuf并返回
         goto end;
       }
-    } else {
+    }
+
+	else 
+	{
+	  //没有匹配的控制块，说明找不到匹配的端口号，返回端口号不可达报文
       LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_input: not for us.\n"));
 
 #if LWIP_ICMP
       /* No match was found, send ICMP destination port unreachable unless
          destination address was broadcast/multicast. */
       if (!broadcast &&
-          !ip_addr_ismulticast(&current_iphdr_dest)) {
+          !ip_addr_ismulticast(&current_iphdr_dest)) {		    //不是广播和多播
         /* move payload pointer back to ip header */
-        pbuf_header(p, (IPH_HL(iphdr) * 4) + UDP_HLEN);
+        pbuf_header(p, (IPH_HL(iphdr) * 4) + UDP_HLEN);  		//payload指向IP首部 
         LWIP_ASSERT("p->payload == iphdr", (p->payload == iphdr));
-        icmp_dest_unreach(p, ICMP_DUR_PORT);
+        icmp_dest_unreach(p, ICMP_DUR_PORT);            		//发送端口不可达报文
       }
 #endif /* LWIP_ICMP */
       UDP_STATS_INC(udp.proterr);
       UDP_STATS_INC(udp.drop);
       snmp_inc_udpnoports();
-      pbuf_free(p);
+      pbuf_free(p);                         	  //直接删除数据报
     }
-  } else {
+  } 
+else //不是给本地的数据报
+{
+  
     pbuf_free(p);
   }
 end:
@@ -450,11 +484,14 @@ end:
  *
  * @see udp_disconnect() udp_sendto()
  */
+//函数功能 : 使用一个处于连接状态的UDP控制块发送用户数据pbuf
+//参数pcb  : UDP控制块
+//参数p    : 存储待转发数据的pbuf
 err_t
 udp_send(struct udp_pcb *pcb, struct pbuf *p)
 {
   /* send to the packet using remote ip and port stored in the pcb */
-  return udp_sendto(pcb, p, &pcb->remote_ip, pcb->remote_port);
+  return udp_sendto(pcb, p, &pcb->remote_ip, pcb->remote_port);  //调用函数，将数据发送到控制块中记录的 远程IP地址的端口处
 }
 
 #if LWIP_CHECKSUM_ON_COPY
@@ -486,7 +523,12 @@ udp_send_chksum(struct udp_pcb *pcb, struct pbuf *p,
  * @return lwIP error code (@see udp_send for possible error codes)
  *
  * @see udp_disconnect() udp_send()
- */
+ */ 
+//函数功能 : 将用户数据的pbuf发送到指定的远端IP地址和端口号上
+//参数pcb  : 发送数据报的UDP控制块
+//参数p    : 存储待转发数据的pbuf
+//参数dst_ip和dst_port:远端IP地址和端口号
+
 err_t
 udp_sendto(struct udp_pcb *pcb, struct pbuf *p,
   ip_addr_t *dst_ip, u16_t dst_port)
@@ -501,7 +543,7 @@ udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
                   u16_t dst_port, u8_t have_chksum, u16_t chksum)
 {
 #endif /* LWIP_CHECKSUM_ON_COPY */
-  struct netif *netif;
+  struct netif *netif;                 
 
   LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_send\n"));
 
@@ -509,11 +551,11 @@ udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
 #if LWIP_IGMP
   netif = ip_route((ip_addr_ismulticast(dst_ip))?(&(pcb->multicast_ip)):(dst_ip));
 #else
-  netif = ip_route(dst_ip);
+  netif = ip_route(dst_ip);              //与IP层交互，得到将发送报文的网络接口结构(源IP地址)
 #endif /* LWIP_IGMP */
 
   /* no outgoing network interface could be found? */
-  if (netif == NULL) {
+  if (netif == NULL) {               	 //若找不到合适的接口结构，则返回错误
     LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("udp_send: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
       ip4_addr1_16(dst_ip), ip4_addr2_16(dst_ip), ip4_addr3_16(dst_ip), ip4_addr4_16(dst_ip)));
     UDP_STATS_INC(udp.rterr);
@@ -522,7 +564,7 @@ udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
 #if LWIP_CHECKSUM_ON_COPY
   return udp_sendto_if_chksum(pcb, p, dst_ip, dst_port, netif, have_chksum, chksum);
 #else /* LWIP_CHECKSUM_ON_COPY */
-  return udp_sendto_if(pcb, p, dst_ip, dst_port, netif);
+  return udp_sendto_if(pcb, p, dst_ip, dst_port, netif);     //调用函数组装并发送UDP报文
 #endif /* LWIP_CHECKSUM_ON_COPY */
 }
 
@@ -545,6 +587,10 @@ udp_sendto_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
  *
  * @see udp_disconnect() udp_send()
  */
+//函数功能 : 组装UDP报文，并发送
+// 参数netif : 发送报文的网络接口结构
+// 其他参数 : 与函数udp_sendto的参数相同
+
 err_t
 udp_sendto_if(struct udp_pcb *pcb, struct pbuf *p,
   ip_addr_t *dst_ip, u16_t dst_port, struct netif *netif)
@@ -560,10 +606,10 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
                      u16_t chksum)
 {
 #endif /* LWIP_CHECKSUM_ON_COPY */
-  struct udp_hdr *udphdr;
-  ip_addr_t *src_ip;
+  struct udp_hdr *udphdr;                     //UDP首部结构指针
+  ip_addr_t *src_ip;                          //IP数据报首部结构指针
   err_t err;
-  struct pbuf *q; /* q will be sent down the stack */
+  struct pbuf *q; /* q will be sent down the stack */  //指向组装好的UDP报文
 
 #if IP_SOF_BROADCAST
   /* broadcast filter? */
@@ -575,45 +621,52 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
 #endif /* IP_SOF_BROADCAST */
 
   /* if the PCB is not yet bound to a port, bind it here */
+  //如果控制块的本地端口未绑定，先进行绑定工作
   if (pcb->local_port == 0) {
     LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_send: not yet bound to a port, binding now\n"));
-    err = udp_bind(pcb, &pcb->local_ip, pcb->local_port);
-    if (err != ERR_OK) {
+    err = udp_bind(pcb, &pcb->local_ip, pcb->local_port);	//调用函数绑定本地暂时端口
+    if (err != ERR_OK) {                           		    //绑定失败，则返回错误标志
       LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_SERIOUS, ("udp_send: forced port bind failed\n"));
       return err;
     }
   }
 
   /* not enough space to add an UDP header to first pbuf in given p chain? */
-  if (pbuf_header(p, UDP_HLEN)) {
+//这里开始构造UDP首部，首先判断用户数据pbuf数据区前面是否能放下UDP
+//首部，若放不下，则为首部重新申请一个首部pbuf空间
+  if (pbuf_header(p, UDP_HLEN)) { 	                //移动指针失败
     /* allocate header in a separate new pbuf */
-    q = pbuf_alloc(PBUF_IP, UDP_HLEN, PBUF_RAM);
+    q = pbuf_alloc(PBUF_IP, UDP_HLEN, PBUF_RAM); 	//在内存堆中申请首部空间pbuf
     /* new header pbuf could not be allocated? */
-    if (q == NULL) {
+    if (q == NULL) {                          		//申请失败，则返回内存错误
       LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_SERIOUS, ("udp_send: could not allocate header\n"));
       return ERR_MEM;
     }
     if (p->tot_len != 0) {
       /* chain header q in front of given pbuf p (only if p contains data) */
+  	  //把首部pbuf和数据pbuf连接到一个pbuf链表上，头指针为q
       pbuf_chain(q, p);
     }
     /* first pbuf q points to header pbuf */
     LWIP_DEBUGF(UDP_DEBUG,
                 ("udp_send: added header pbuf %p before given pbuf %p\n", (void *)q, (void *)p));
-  } else {
-    /* adding space for header within p succeeded */
-    /* first pbuf q equals given pbuf */
-    q = p;
+  } 
+  else 	  //若在数据pbuf中已经预留了UDP首部空间
+  	{
+      /* adding space for header within p succeeded */
+      /* first pbuf q equals given pbuf */
+    q = p;                         	//则q指向pbuf
     LWIP_DEBUGF(UDP_DEBUG, ("udp_send: added header in given pbuf %p\n", (void *)p));
   }
   LWIP_ASSERT("check that first pbuf can hold struct udp_hdr",
               (q->len >= sizeof(struct udp_hdr)));
   /* q now represents the packet to be sent */
-  udphdr = (struct udp_hdr *)q->payload;
-  udphdr->src = htons(pcb->local_port);
-  udphdr->dest = htons(dst_port);
+  //得到首部空间后，填写首部中的四个字段
+  udphdr = (struct udp_hdr *)q->payload;               //指向报文的首部区域
+  udphdr->src = htons(pcb->local_port);                //填写本地端口
+  udphdr->dest = htons(dst_port);                      //填写远端端口
   /* in UDP, 0 checksum means 'no checksum' */
-  udphdr->chksum = 0x0000; 
+  udphdr->chksum = 0x0000;                             //将首部中的校验和清0
 
   /* Multicast Loop? */
 #if LWIP_IGMP
@@ -624,24 +677,28 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
 
 
   /* PCB local address is IP_ANY_ADDR? */
-  if (ip_addr_isany(&pcb->local_ip)) {
+  //下面准备计算校验和，首先要得到几个伪首部区域的值，先找到源IP地址
+  if (ip_addr_isany(&pcb->local_ip)) {         	  //如果控制块中的源IP地址为0，则使用网络接口结构的IP地址为伪首部中的源IP地址
     /* use outgoing network interface IP address as source address */
     src_ip = &(netif->ip_addr);
-  } else {
+  } 
+  else 
+  {
+    //如果控制块中记录了IP地址但该地址与网络接口的IP地址不一致，则说明该控制块是旧的无效的控制块
     /* check if UDP PCB local IP address is correct
      * this could be an old address if netif->ip_addr has changed */
-    if (!ip_addr_cmp(&(pcb->local_ip), &(netif->ip_addr))) {
+    if (!ip_addr_cmp(&(pcb->local_ip), &(netif->ip_addr))) {		//不发送任何报文，直接返回
       /* local_ip doesn't match, drop the packet */
-      if (q != p) {
+      if (q != p) {                                        		   //若为该UDP报文申请过首部空间
         /* free the header pbuf */
-        pbuf_free(q);
+        pbuf_free(q);                                       	   //释放掉首部空间，但P指向的Pbuf不会被释放掉
         q = NULL;
         /* p is still referenced by the caller, and will live on */
       }
       return ERR_VAL;
     }
     /* use UDP PCB local IP address as source address */
-    src_ip = &(pcb->local_ip);
+    src_ip = &(pcb->local_ip);                           	//控制块中记录的IP地址作为伪首部中的源IP地址
   }
 
   LWIP_DEBUGF(UDP_DEBUG, ("udp_send: sending datagram of length %"U16_F"\n", q->tot_len));
@@ -666,7 +723,10 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
       chklen_hdr = 0;
       chklen = q->tot_len;
     }
-    udphdr->len = htons(chklen_hdr);
+
+	
+	//下面计算校验和，填写首部中的剩余字段
+    udphdr->len = htons(chklen_hdr);                    	//首部中的总长度字段
     /* calculate checksum */
 #if CHECKSUM_GEN_UDP
     udphdr->chksum = inet_chksum_pseudo_partial(q, src_ip, dst_ip,
@@ -700,6 +760,8 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
     /* calculate checksum */
 #if CHECKSUM_GEN_UDP
     if ((pcb->flags & UDP_FLAGS_NOCHKSUM) == 0) {
+		//控制块上允许校验和的计算
+		//调用函数计算校验和
       u16_t udpchksum;
 #if LWIP_CHECKSUM_ON_COPY
       if (have_chksum) {
@@ -715,6 +777,7 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
       }
 
       /* chksum zero must become 0xffff, as zero means 'no checksum' */
+	  //若校验和不能全为0，若全为0，则改为全1
       if (udpchksum == 0x0000) {
         udpchksum = 0xffff;
       }
@@ -725,6 +788,7 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
     LWIP_DEBUGF(UDP_DEBUG, ("udp_send: ip_output_if (,,,,IP_PROTO_UDP,)\n"));
     /* output to IP */
     NETIF_SET_HWADDRHINT(netif, &pcb->addr_hint);
+	//下面，调用IP层的发送函数，填写IP首部，发送IP数据报
     err = ip_output_if(q, src_ip, dst_ip, pcb->ttl, pcb->tos, IP_PROTO_UDP, netif);
     NETIF_SET_HWADDRHINT(netif, NULL);
   }
@@ -732,7 +796,7 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
   snmp_inc_udpoutdatagrams();
 
   /* did we chain a separate header pbuf earlier? */
-  if (q != p) {
+  if (q != p) {                	  //发送完成后释放掉申请过的UDP首部空间
     /* free the header pbuf */
     pbuf_free(q);
     q = NULL;
@@ -740,7 +804,7 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
   }
 
   UDP_STATS_INC(udp.xmit);
-  return err;
+  return err;                       //返回发送结果
 }
 
 /**
@@ -762,11 +826,15 @@ udp_sendto_if_chksum(struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *dst_ip,
  *
  * @see udp_disconnect()
  */
+ //函数功能 : 为UDP控制块绑定一个本地IP地址和端口号
+ //参数pcb  : 指向要操作的控制块指针
+ //参数ipaddr : 本地IP地址，若为IP_ADDR_ANY(0),表示任意网络接口结构的IP地址
+ //参数port : 本地端口号，若为0，则函数将自动为控制块分配一个有效的短暂端口号
 err_t
 udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
 {
   struct udp_pcb *ipcb;
-  u8_t rebind;
+  u8_t rebind;                //全局变量，表示控制块是否已在链表udp_pcbs中置0
 
   LWIP_DEBUGF(UDP_DEBUG | LWIP_DBG_TRACE, ("udp_bind(ipaddr = "));
   ip_addr_debug_print(UDP_DEBUG, ipaddr);
@@ -774,13 +842,14 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
 
   rebind = 0;
   /* Check for double bind and rebind of the same pcb */
+  //遍历整个链表，查找控制块pcb，若控制块已在链表中，则后续不再进行链表插入操作
   for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) {
     /* is this UDP PCB already on active list? */
-    if (pcb == ipcb) {
+    if (pcb == ipcb) {                                  //找到控制块
       /* pcb may occur at most once in active list */
       LWIP_ASSERT("rebind == 0", rebind == 0);
       /* pcb already in list, just rebind */
-      rebind = 1;
+      rebind = 1;                                     //设置全局变量有效
     }
 
     /* By default, we don't allow to bind to a port that any other udp
@@ -806,9 +875,10 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
     }
   }
 
-  ip_addr_set(&pcb->local_ip, ipaddr);
+  ip_addr_set(&pcb->local_ip, ipaddr);  //设置控制块的本地IP地址字段
 
   /* no port specified? */
+  //如果port为0，则要自动为控制块寻找一个有效短暂端口
   if (port == 0) {
     port = udp_new_port();
     if (port == 0) {
@@ -817,10 +887,10 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
       return ERR_USE;
     }
   }
-  pcb->local_port = port;
-  snmp_insert_udpidx_tree(pcb);
+  pcb->local_port = port;          //到这里，有了有效的端口号，直接设置local_port字段
+  snmp_insert_udpidx_tree(pcb);  
   /* pcb not active yet? */
-  if (rebind == 0) {
+  if (rebind == 0) {               //如果控制块没有在链表中，则将它加入链表首部
     /* place the PCB on the active list if not already there */
     pcb->next = udp_pcbs;
     udp_pcbs = pcb;
@@ -830,7 +900,7 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
                ip4_addr1_16(&pcb->local_ip), ip4_addr2_16(&pcb->local_ip),
                ip4_addr3_16(&pcb->local_ip), ip4_addr4_16(&pcb->local_ip),
                pcb->local_port));
-  return ERR_OK;
+  return ERR_OK;                   //返回处理结果
 }
 /**
  * Connect an UDP PCB.
@@ -849,21 +919,27 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
  *
  * @see udp_disconnect()
  */
+//函数功能 : 为UDP控制块绑定一个远端IP地址和端口号
+//参数pcb  : 指向要操作的控制块
+//参数ipaddr: 远端IP地址
+//参数port : 远端端口号
 err_t
 udp_connect(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
 {
   struct udp_pcb *ipcb;
 
-  if (pcb->local_port == 0) {
+  if (pcb->local_port == 0) {                    	  //如果本地端口号未绑定，调用函数绑定本地端口
     err_t err = udp_bind(pcb, &pcb->local_ip, pcb->local_port);
-    if (err != ERR_OK) {
+    if (err != ERR_OK) {                       		  //如果绑定失败，则返回错误
       return err;
     }
   }
 
-  ip_addr_set(&pcb->remote_ip, ipaddr);
-  pcb->remote_port = port;
-  pcb->flags |= UDP_FLAGS_CONNECTED;
+  ip_addr_set(&pcb->remote_ip, ipaddr);               //设置remote_ip字段
+  
+  pcb->remote_port = port;                            //设置remte_port字段
+  
+  pcb->flags |= UDP_FLAGS_CONNECTED;                  //控制块状态设置为连接状态
 /** TODO: this functionality belongs in upper layers */
 #ifdef LWIP_UDP_TODO
   /* Nail down local IP for netconn_addr()/getsockname() */
@@ -890,14 +966,14 @@ udp_connect(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
                pcb->local_port));
 
   /* Insert UDP PCB into the list of active UDP PCBs. */
-  for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) {
+  for (ipcb = udp_pcbs; ipcb != NULL; ipcb = ipcb->next) {	  //遍历链表，查找是否控制块已经处在链表中
     if (pcb == ipcb) {
       /* already on the list, just return */
-      return ERR_OK;
+      return ERR_OK;                                    	  //若是，则返回成功
     }
   }
   /* PCB not yet on the list, add PCB now */
-  pcb->next = udp_pcbs;
+  pcb->next = udp_pcbs;                                       //若控制块没有在链表中，则将控制块插入到链表首部
   udp_pcbs = pcb;
   return ERR_OK;
 }
@@ -907,14 +983,16 @@ udp_connect(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
  *
  * @param pcb the udp pcb to disconnect.
  */
+ 
+//函数功能 : 清除remote_ip和remote_port字段，将控制块设置为非连接状态
 void
 udp_disconnect(struct udp_pcb *pcb)
 {
   /* reset remote address association */
-  ip_addr_set_any(&pcb->remote_ip);
-  pcb->remote_port = 0;
+  ip_addr_set_any(&pcb->remote_ip);             //清空remote_ip
+  pcb->remote_port = 0;                         //清空remote_port字段
   /* mark PCB as unconnected */
-  pcb->flags &= ~UDP_FLAGS_CONNECTED;
+  pcb->flags &= ~UDP_FLAGS_CONNECTED;           //置为非连接状态
 }
 
 /**
@@ -926,12 +1004,16 @@ udp_disconnect(struct udp_pcb *pcb)
  * @param recv function pointer of the callback function
  * @param recv_arg additional argument to pass to the callback function
  */
+//函数功能 : 为控制块注册回调函数
+//参数pcb  : 指向要操作的控制块
+//参数recv : 用户自定义的数据报处理函数
+//参数recv_arg: 用户定义的数据
 void
 udp_recv(struct udp_pcb *pcb, udp_recv_fn recv, void *recv_arg)
 {
   /* remember recv() callback and user data */
-  pcb->recv = recv;
-  pcb->recv_arg = recv_arg;
+  pcb->recv = recv;                              //填写控制块的recv字段
+  pcb->recv_arg = recv_arg;                      //填写控制块的recv_arg字段
 }
 
 /**
@@ -942,6 +1024,7 @@ udp_recv(struct udp_pcb *pcb, udp_recv_fn recv, void *recv_arg)
  *
  * @see udp_new()
  */
+ //函数功能 : 将一个控制块结构从链表中删除，并释放其占用的内存空间
 void
 udp_remove(struct udp_pcb *pcb)
 {
@@ -949,20 +1032,20 @@ udp_remove(struct udp_pcb *pcb)
 
   snmp_delete_udpidx_tree(pcb);
   /* pcb to be removed is first in list? */
-  if (udp_pcbs == pcb) {
+  if (udp_pcbs == pcb) {                 	    //如果控制块在链表的首部
     /* make list start at 2nd pcb */
-    udp_pcbs = udp_pcbs->next;
+    udp_pcbs = udp_pcbs->next;               	//从链表上删除
     /* pcb not 1st in list */
   } else {
-    for (pcb2 = udp_pcbs; pcb2 != NULL; pcb2 = pcb2->next) {
+    for (pcb2 = udp_pcbs; pcb2 != NULL; pcb2 = pcb2->next) {		//否则，依次查找链表
       /* find pcb in udp_pcbs list */
-      if (pcb2->next != NULL && pcb2->next == pcb) {
+      if (pcb2->next != NULL && pcb2->next == pcb) {		        //找到控制块
         /* remove pcb from list */
-        pcb2->next = pcb->next;
+        pcb2->next = pcb->next;                             		//从链表上删除 
       }
     }
   }
-  memp_free(MEMP_UDP_PCB, pcb);
+  memp_free(MEMP_UDP_PCB, pcb);                                  //释放内存池空间
 }
 
 /**
@@ -973,19 +1056,20 @@ udp_remove(struct udp_pcb *pcb)
  *
  * @see udp_remove()
  */
+ //新建UDP控制块
 struct udp_pcb *
 udp_new(void)
 {
   struct udp_pcb *pcb;
-  pcb = (struct udp_pcb *)memp_malloc(MEMP_UDP_PCB);
+  pcb = (struct udp_pcb *)memp_malloc(MEMP_UDP_PCB);  //为控制块申请一个内存池空间
   /* could allocate UDP PCB? */
-  if (pcb != NULL) {
+  if (pcb != NULL) {                                  //申请成功后，初始化各个字段
     /* UDP Lite: by initializing to all zeroes, chksum_len is set to 0
      * which means checksum is generated over the whole datagram per default
      * (recommended as default by RFC 3828). */
     /* initialize PCB to all zeroes */
-    memset(pcb, 0, sizeof(struct udp_pcb));
-    pcb->ttl = UDP_TTL;
+    memset(pcb, 0, sizeof(struct udp_pcb));   //将所有字段全部清0
+    pcb->ttl = UDP_TTL;                       //设置控制块中的TTL字段
   }
   return pcb;
 }

@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-#define UDP_HLEN 8
+#define UDP_HLEN 8                                 //定义UDP数据报首部长度
 
 /* Fields are (of course) in network byte order. */
 #ifdef PACK_STRUCT_USE_INCLUDES
@@ -53,19 +53,20 @@ extern "C" {
 #endif
 PACK_STRUCT_BEGIN
 struct udp_hdr {
-  PACK_STRUCT_FIELD(u16_t src);
-  PACK_STRUCT_FIELD(u16_t dest);  /* src/dest UDP ports */
-  PACK_STRUCT_FIELD(u16_t len);
-  PACK_STRUCT_FIELD(u16_t chksum);
+  PACK_STRUCT_FIELD(u16_t src);                   //源端口号
+  PACK_STRUCT_FIELD(u16_t dest);  /* src/dest UDP ports */  //目的端口号
+  PACK_STRUCT_FIELD(u16_t len);                  //总长度
+  PACK_STRUCT_FIELD(u16_t chksum);               //校验和
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/epstruct.h"
 #endif
 
-#define UDP_FLAGS_NOCHKSUM       0x01U
+//定义两个宏，用于控制块的flags字段，标识控制块的状态信息
+#define UDP_FLAGS_NOCHKSUM       0x01U                //不进行校验和的计算
 #define UDP_FLAGS_UDPLITE        0x02U
-#define UDP_FLAGS_CONNECTED      0x04U
+#define UDP_FLAGS_CONNECTED      0x04U                //控制块已和远端建立连接
 #define UDP_FLAGS_MULTICAST_LOOP 0x08U
 
 struct udp_pcb;
@@ -87,18 +88,18 @@ struct udp_pcb;
 typedef void (*udp_recv_fn)(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     ip_addr_t *addr, u16_t port);
 
-
+//定义UDP控制块结构
 struct udp_pcb {
 /* Common members of all PCB types */
-  IP_PCB;
+  IP_PCB;             //宏IP_PCB中的各个字段
 
 /* Protocol specific PCB members */
 
-  struct udp_pcb *next;
+  struct udp_pcb *next; //用于将 udp控制块 组织成链表的指针
 
-  u8_t flags;
+  u8_t flags;          //控制块状态字段
   /** ports are in host byte order */
-  u16_t local_port, remote_port;
+  u16_t local_port, remote_port;   //保存本地端口号和远端端口号，使用主机字节序
 
 #if LWIP_IGMP
   /** outgoing network interface for multicast packets */
@@ -111,9 +112,9 @@ struct udp_pcb {
 #endif /* LWIP_UDPLITE */
 
   /** receive callback function */
-  udp_recv_fn recv;
+  udp_recv_fn recv;              //处理数据时的回调函数
   /** user-supplied argument for the recv callback */
-  void *recv_arg;  
+  void *recv_arg;                //当调用回调函数时，将传递给函数的用户定义数据信息
 };
 /* udp_pcbs export for exernal reference (e.g. SNMP agent) */
 extern struct udp_pcb *udp_pcbs;

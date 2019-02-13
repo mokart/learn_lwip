@@ -1,4 +1,4 @@
-add
+﻿add
 commit
 push
 
@@ -11,3 +11,6 @@ example git commit -m "understand how stage works"
 
 第一次 git push -u origin master
 以后   git push origin master
+
+
+
