@@ -114,24 +114,27 @@ err_t            tcp_process_refused_data(struct tcp_pcb *pcb);
 #define TCP_HLEN 20
 
 #ifndef TCP_TMR_INTERVAL
-#define TCP_TMR_INTERVAL       250  /* The TCP timer interval in milliseconds. */
+#define TCP_TMR_INTERVAL       250  /* The TCP timer interval in milliseconds. */ //250ms 宏定义
 #endif /* TCP_TMR_INTERVAL */
 
 #ifndef TCP_FAST_INTERVAL
-#define TCP_FAST_INTERVAL      TCP_TMR_INTERVAL /* the fine grained timeout in milliseconds */
+#define TCP_FAST_INTERVAL      TCP_TMR_INTERVAL /* the fine grained timeout in milliseconds */ //TCP 快定时器，毫秒
 #endif /* TCP_FAST_INTERVAL */
 
 #ifndef TCP_SLOW_INTERVAL
-#define TCP_SLOW_INTERVAL      (2*TCP_TMR_INTERVAL)  /* the coarse grained timeout in milliseconds */
+#define TCP_SLOW_INTERVAL      (2*TCP_TMR_INTERVAL)  /* the coarse grained timeout in milliseconds *///慢定时器周期，毫秒
 #endif /* TCP_SLOW_INTERVAL */
 
-#define TCP_FIN_WAIT_TIMEOUT 20000 /* milliseconds */
-#define TCP_SYN_RCVD_TIMEOUT 20000 /* milliseconds */
+#define TCP_FIN_WAIT_TIMEOUT 20000 /* milliseconds */  //FIN_WAIT_2状态时间，毫秒
+#define TCP_SYN_RCVD_TIMEOUT 20000 /* milliseconds */  //SYN_RCVD状态等待时间，毫秒
 
-#define TCP_OOSEQ_TIMEOUT        6U /* x RTO */
+#define TCP_OOSEQ_TIMEOUT        6U /* x RTO */      //失序报文重组的时间，6倍TTL
+												  
+
 
 #ifndef TCP_MSL
-#define TCP_MSL 60000UL /* The maximum segment lifetime in milliseconds */
+#define TCP_MSL 60000UL /* The maximum segment lifetime in milliseconds */ //报文的最大生存时间，毫秒，LAST_ACK状态和
+																	//TIME_WAIT状态的等待时间都设置为2倍MSL
 #endif
 
 /* Keepalive values, compliant with RFC 1122. Don't change this unless you know what you're doing */
@@ -155,16 +158,18 @@ err_t            tcp_process_refused_data(struct tcp_pcb *pcb);
 #ifdef PACK_STRUCT_USE_INCLUDES
 #  include "arch/bpstruct.h"
 #endif
+
+//定义TCP首部结构体
 PACK_STRUCT_BEGIN
 struct tcp_hdr {
-  PACK_STRUCT_FIELD(u16_t src);
-  PACK_STRUCT_FIELD(u16_t dest);
-  PACK_STRUCT_FIELD(u32_t seqno);
-  PACK_STRUCT_FIELD(u32_t ackno);
-  PACK_STRUCT_FIELD(u16_t _hdrlen_rsvd_flags);
-  PACK_STRUCT_FIELD(u16_t wnd);
-  PACK_STRUCT_FIELD(u16_t chksum);
-  PACK_STRUCT_FIELD(u16_t urgp);
+  PACK_STRUCT_FIELD(u16_t src);      //源端口
+  PACK_STRUCT_FIELD(u16_t dest);     //目的端口
+  PACK_STRUCT_FIELD(u32_t seqno);    //序号
+  PACK_STRUCT_FIELD(u32_t ackno);    //确认序号
+  PACK_STRUCT_FIELD(u16_t _hdrlen_rsvd_flags);  //首部长度+保留位+标志位
+  PACK_STRUCT_FIELD(u16_t wnd);        //窗口大小
+  PACK_STRUCT_FIELD(u16_t chksum);      //校验和
+  PACK_STRUCT_FIELD(u16_t urgp);        //紧急指针
 } PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 #ifdef PACK_STRUCT_USE_INCLUDES
@@ -274,10 +279,12 @@ PACK_STRUCT_END
 #define TCP_CHECKSUM_ON_COPY  (LWIP_CHECKSUM_ON_COPY && CHECKSUM_GEN_TCP)
 
 /* This structure represents a TCP segment on the unsent, unacked and ooseq queues */
+//定义组织TCP报文段的结构
 struct tcp_seg {
-  struct tcp_seg *next;    /* used when putting segements on a queue */
-  struct pbuf *p;          /* buffer containing data + TCP header */
-  u16_t len;               /* the TCP length of this segment */
+  struct tcp_seg *next;    /* used when putting segements on a queue */  //该指针用于将报文段组织为队列的形式
+  struct pbuf *p;          /* buffer containing data + TCP header */     //指向装载报文段的pbuf
+  u16_t len;               /* the TCP length of this segment */         //报文段中的数据长度
+
 #if TCP_OVERSIZE_DBGCHECK
   u16_t oversize_left;     /* Extra bytes available at the end of the last
                               pbuf in unsent (used for asserting vs.
@@ -287,12 +294,13 @@ struct tcp_seg {
   u16_t chksum;
   u8_t  chksum_swapped;
 #endif /* TCP_CHECKSUM_ON_COPY */
-  u8_t  flags;
-#define TF_SEG_OPTS_MSS         (u8_t)0x01U /* Include MSS option. */
-#define TF_SEG_OPTS_TS          (u8_t)0x02U /* Include timestamp option. */
+  u8_t  flags;                     //表示所描述报文段的选项属性
+#define TF_SEG_OPTS_MSS         (u8_t)0x01U /* Include MSS option. */          //包含了最大报文段大小选项
+#define TF_SEG_OPTS_TS          (u8_t)0x02U /* Include timestamp option. */     //包含了时间戳选项
 #define TF_SEG_DATA_CHECKSUMMED (u8_t)0x04U /* ALL data (not the header) is
                                                checksummed into 'chksum' */
-  struct tcp_hdr *tcphdr;  /* the TCP header */
+                                               
+  struct tcp_hdr *tcphdr;  /* the TCP header */                         //指向报文段中的TCP首部 
 };
 
 #define LWIP_TCP_OPT_LENGTH(flags)              \

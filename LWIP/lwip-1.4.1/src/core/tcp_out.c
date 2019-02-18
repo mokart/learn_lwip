@@ -350,6 +350,11 @@ tcp_write_checks(struct tcp_pcb *pcb, u16_t len)
  * - TCP_WRITE_FLAG_MORE (0x02) for TCP connection, PSH flag will be set on last segment sent,
  * @return ERR_OK if enqueued, another err_t on error
  */
+//函数功能 : 连接向另一方发送数据，该函数构造一个报文段并放在控制块缓冲队列中
+//参数pcb  : 指向响应连接的控制块
+//参数data : 待发送数据的起始地址
+//参数len  : 待发送数据的长度
+//参数apiflags: 数据是否进行拷贝，以及报文段是否设置PSH标志
 err_t
 tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
 {
@@ -894,6 +899,8 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
  * @return ERR_OK if data has been sent or nothing to send
  *         another err_t on error
  */
+
+//发送控制块缓冲区队列中的报文段 
 err_t
 tcp_output(struct tcp_pcb *pcb)
 {
@@ -911,13 +918,16 @@ tcp_output(struct tcp_pcb *pcb)
      code. If so, we do not output anything. Instead, we rely on the
      input processing code to call us when input processing is done
      with. */
-  if (tcp_input_pcb == pcb) {
-    return ERR_OK;
+  
+  //如果控制块当前正有数据处理，这里不做任何输出，直接返回
+  if (tcp_input_pcb == pcb) {      	  //在控制块的数据处理完成后，内核会再次
+    return ERR_OK;                 	  //调用tcp_output发送函数，见函数tcp_input
   }
 
+  //从发送窗口和阻塞窗口取出小者得到有效发送窗口，拥塞避免会讲解到这个原理
   wnd = LWIP_MIN(pcb->snd_wnd, pcb->cwnd);
 
-  seg = pcb->unsent;
+  seg = pcb->unsent;            //未发送队列
 
   /* If the TF_ACK_NOW flag is set and no data will be sent (either
    * because the ->unsent queue is empty or because the window does
@@ -925,16 +935,18 @@ tcp_output(struct tcp_pcb *pcb)
    *
    * If data is to be sent, we will just piggyback the ACK (see below).
    */
+//若要求立即确认，但该ACK又不能被捎带出去，则只发送一个纯ACK的报文段
   if (pcb->flags & TF_ACK_NOW &&
      (seg == NULL ||
       ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len > wnd)) {
-     return tcp_send_empty_ack(pcb);
+     return tcp_send_empty_ack(pcb);     	 //发送只带ACK的报文段
   }
 
   /* useg should point to last segment on unacked queue */
+  //将useg变量指向未确认队列的尾部tcp_seg结构
   useg = pcb->unacked;
   if (useg != NULL) {
-    for (; useg->next != NULL; useg = useg->next);
+    for (; useg->next != NULL; useg = useg->next);	//得到尾部
   }
 
 #if TCP_OUTPUT_DEBUG
@@ -959,6 +971,7 @@ tcp_output(struct tcp_pcb *pcb)
   }
 #endif /* TCP_CWND_DEBUG */
   /* data available and window allows it to be sent? */
+  //若当前有效发送窗口允许报文的发送，则循环发送报文，直至填满窗口
   while (seg != NULL &&
          ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
     LWIP_ASSERT("RST not expected here!", 
@@ -970,9 +983,10 @@ tcp_output(struct tcp_pcb *pcb)
      *   either seg->next != NULL or pcb->unacked == NULL;
      *   RST is no sent using tcp_write/tcp_output.
      */
+    //如果Nagle算法有效，或者当前控制块内存有错误，则不发生报文
     if((tcp_do_output_nagle(pcb) == 0) &&
       ((pcb->flags & (TF_NAGLEMEMERR | TF_FIN)) == 0)){
-      break;
+      break;           	  //结束发送循环
     }
 #if TCP_CWND_DEBUG
     LWIP_DEBUGF(TCP_CWND_DEBUG, ("tcp_output: snd_wnd %"U16_F", cwnd %"U16_F", wnd %"U32_F", effwnd %"U32_F", seq %"U32_F", ack %"U32_F", i %"S16_F"\n",
@@ -982,41 +996,49 @@ tcp_output(struct tcp_pcb *pcb)
                             ntohl(seg->tcphdr->seqno), pcb->lastack, i));
     ++i;
 #endif /* TCP_CWND_DEBUG */
+//否则当前报文段可以发送
+    pcb->unsent = seg->next;      	//从缓冲队列中删除报文段
 
-    pcb->unsent = seg->next;
-
-    if (pcb->state != SYN_SENT) {
-      TCPH_SET_FLAG(seg->tcphdr, TCP_ACK);
-      pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);
+    if (pcb->state != SYN_SENT) {      		//当前不为SYN_SENT状态
+      TCPH_SET_FLAG(seg->tcphdr, TCP_ACK); 	  //填写首部中的ACK标志
+      pcb->flags &= ~(TF_ACK_DELAY | TF_ACK_NOW);	  //清除标志位
     }
 
-    tcp_output_segment(seg, pcb);
-    snd_nxt = ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg);
-    if (TCP_SEQ_LT(pcb->snd_nxt, snd_nxt)) {
+    tcp_output_segment(seg, pcb);       	//调用函数发送报文段
+    
+    snd_nxt = ntohl(seg->tcphdr->seqno) + TCP_TCPLEN(seg);  	//计算snd_nxt值
+    if (TCP_SEQ_LT(pcb->snd_nxt, snd_nxt)) {            		//更新下一个要发送的数据编号
       pcb->snd_nxt = snd_nxt;
     }
+	
     /* put segment on unacknowledged list if length > 0 */
+	//如果发送出去的报文段数据长度不为0，或者带有SYN FIN标志，则将该报文段
+    //加入到未确认队列中以便超时后重传
     if (TCP_TCPLEN(seg) > 0) {
-      seg->next = NULL;
+      seg->next = NULL;         	           //清空报文段next字段
       /* unacked list is empty? */
-      if (pcb->unacked == NULL) {
+      if (pcb->unacked == NULL) {   		   //若未确认队列为空，则直接挂接
         pcb->unacked = seg;
-        useg = seg;
+        useg = seg;                     		//变量useg指向未确认队列尾部
       /* unacked list is not empty? */
       } else {
         /* In the case of fast retransmit, the packet should not go to the tail
          * of the unacked queue, but rather somewhere before it. We need to check for
          * this case. -STJ Jul 27, 2004 */
+         
+		//如果未确认队列不为空，则需要把当前报文按照顺序组织在队列中
         if (TCP_SEQ_LT(ntohl(seg->tcphdr->seqno), ntohl(useg->tcphdr->seqno))) {
           /* add segment to before tail of unacked list, keeping the list sorted */
+		  //如果当前报文的序列号比队列尾部报文的序号低，则从队列首部开始
+		  //查找合适的位置，插入报文段
           struct tcp_seg **cur_seg = &(pcb->unacked);
           while (*cur_seg &&
             TCP_SEQ_LT(ntohl((*cur_seg)->tcphdr->seqno), ntohl(seg->tcphdr->seqno))) {
               cur_seg = &((*cur_seg)->next );
-          }
+          }                         		  //找到插入位置，将报文段插入到队列中
           seg->next = (*cur_seg);
           (*cur_seg) = seg;
-        } else {
+        } else {                     			//报文段序号最高，则放在未确认队列尾部
           /* add segment to tail of unacked list */
           useg->next = seg;
           useg = useg->next;
@@ -1024,9 +1046,9 @@ tcp_output(struct tcp_pcb *pcb)
       }
     /* do not queue empty segments on the unacked list */
     } else {
-      tcp_seg_free(seg);
+      tcp_seg_free(seg);             	  //报文段长度为0，不需要重传，直接删除
     }
-    seg = pcb->unsent;
+    seg = pcb->unsent;                  	//发送下一个报文段
   }
 #if TCP_OVERSIZE
   if (pcb->unsent == NULL) {
@@ -1035,7 +1057,7 @@ tcp_output(struct tcp_pcb *pcb)
   }
 #endif /* TCP_OVERSIZE */
 
-  pcb->flags &= ~TF_NAGLEMEMERR;
+  pcb->flags &= ~TF_NAGLEMEMERR;            //报文段成功发送，清除内存错误标志
   return ERR_OK;
 }
 
@@ -1045,6 +1067,9 @@ tcp_output(struct tcp_pcb *pcb)
  * @param seg the tcp_seg to send
  * @param pcb the tcp_pcb for the TCP connection used to send the segment
  */
+//被tcp_output调用，实际上通过IP发送一个TCP segment
+//参数seg :  将要被发送的tcp_seg
+//参数pcb :  用于TCP连接的tcp_pcb，用于发送该segment
 static void
 tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 {
@@ -1088,8 +1113,8 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
 
   /* Set retransmission timer running if it is not currently enabled 
      This must be set before checking the route. */
-  if (pcb->rtime == -1) {
-    pcb->rtime = 0;
+  if (pcb->rtime == -1) {	  //如果该控制块的重传定时器是关闭的，则打开
+    pcb->rtime = 0;      	  //定时器从0开始计数
   }
 
   /* If we don't have a local IP address, we get one by
@@ -1102,9 +1127,9 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb)
     ip_addr_copy(pcb->local_ip, netif->ip_addr);
   }
 
-  if (pcb->rttest == 0) {
-    pcb->rttest = tcp_ticks;
-    pcb->rtseq = ntohl(seg->tcphdr->seqno);
+  if (pcb->rttest == 0) {        	  //RTT估计计时器是关闭的
+    pcb->rttest = tcp_ticks;      	  //则开启RTT估计，记录当前系统时刻
+    pcb->rtseq = ntohl(seg->tcphdr->seqno); 	//记录被估计的报文段编号
 
     LWIP_DEBUGF(TCP_RTO_DEBUG, ("tcp_output_segment: rtseq %"U32_F"\n", pcb->rtseq));
   }
@@ -1235,6 +1260,11 @@ tcp_rst(u32_t seqno, u32_t ackno,
  *
  * @param pcb the tcp_pcb for which to re-enqueue all unacked segments
  */
+ 
+//重新排列所有未包装的段以进行重新传输
+//由tcp_slowtmr（）调用以进行慢速重传。
+//param pcb tcp_pcb，用于重新排列所有未经处理的段
+
 void
 tcp_rexmit_rto(struct tcp_pcb *pcb)
 {
@@ -1245,7 +1275,7 @@ tcp_rexmit_rto(struct tcp_pcb *pcb)
   }
 
   /* Move all unacked segments to the head of the unsent queue */
-  for (seg = pcb->unacked; seg->next != NULL; seg = seg->next);
+  for (seg = pcb->unacked; seg->next != NULL; seg = seg->next);  //将unacked队列全部放到unsent队列前端
   /* concatenate unsent queue after unacked queue */
   seg->next = pcb->unsent;
   /* unsent queue is the concatenated queue (of unacked, unsent) */
@@ -1255,13 +1285,13 @@ tcp_rexmit_rto(struct tcp_pcb *pcb)
   /* last unsent hasn't changed, no need to reset unsent_oversize */
 
   /* increment number of retransmissions */
-  ++pcb->nrtx;
+  ++pcb->nrtx;        //重传次数加1
 
   /* Don't take any RTT measurements after retransmitting. */
-  pcb->rttest = 0;
+  pcb->rttest = 0;   //重发报文期间不进行RTT估计
 
   /* Do the actual retransmission */
-  tcp_output(pcb);
+  tcp_output(pcb);  //发送一个数据包
 }
 
 /**

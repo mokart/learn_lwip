@@ -59,17 +59,18 @@
 /* These variables are global to all functions involved in the input
    processing of TCP segments. They are set by the tcp_input()
    function. */
-static struct tcp_seg inseg;
-static struct tcp_hdr *tcphdr;
-static struct ip_hdr *iphdr;
-static u32_t seqno, ackno;
-static u8_t flags;
-static u16_t tcplen;
+//定义一些全局静态变量，这些变量可以在该文件的所有函数中直接引用   
+static struct tcp_seg inseg;     //tcp_seg结构，用来描述输入的报文段
+static struct tcp_hdr *tcphdr;   //指向报文段中的TCP首部
+static struct ip_hdr *iphdr;     //指向IP数据报首部
+static u32_t seqno, ackno;       //报文段TCP首部中的序号段与确认号字段值
+static u8_t flags;              //首部中的标志字段值
+static u16_t tcplen;            //TCP报文段长度
 
-static u8_t recv_flags;
-static struct pbuf *recv_data;
+static u8_t recv_flags;          //该变量记录了所有函数对当前报文段的处理结果
+static struct pbuf *recv_data;   //指向报文段中的数据pbuf
 
-struct tcp_pcb *tcp_input_pcb;
+struct tcp_pcb *tcp_input_pcb;   //处理当前报文段的控制块
 
 /* Forward declarations. */
 static err_t tcp_process(struct tcp_pcb *pcb);
@@ -88,6 +89,10 @@ static err_t tcp_timewait_input(struct tcp_pcb *pcb);
  * @param p received TCP segment to process (p->payload pointing to the IP header)
  * @param inp network interface on which this segment was received
  */
+//TCP的初始输入处理。它验证TCP头，解复用PCB之间的段,并将其传递给实现 TCP有限状态机的tcp_process（）?
+//该功能由IP层调用（在 ip_input（）中）。
+//* @param p收到要处理的TCP段（p->指向IP头的有效负载）
+//* @param inp网络接口，已收到此段
 void
 tcp_input(struct pbuf *p, struct netif *inp)
 {
@@ -300,20 +305,21 @@ tcp_input(struct pbuf *p, struct netif *inp)
         goto aborted;
       }
     }
-    tcp_input_pcb = pcb;
-    err = tcp_process(pcb);
+    tcp_input_pcb = pcb;        	//记录处理当前报文的控制块
+    err = tcp_process(pcb);      	//处理报文段
     /* A return value of ERR_ABRT means that tcp_abort() was called
        and that the pcb has been freed. If so, we don't do anything. */
-    if (err != ERR_ABRT) {
-      if (recv_flags & TF_RESET) {
+	//若返回值为ERR_ABRT,说明控制块已经被完全删除，这里什么也不需要做
+    if (err != ERR_ABRT) {      	//不为ERR_ABRT
+      if (recv_flags & TF_RESET) {		  //若收到对方的复位报文，连接出错，回调用户的errf函数
         /* TF_RESET means that the connection was reset by the other
            end. We then call the error callback to inform the
            application that the connection is dead before we
            deallocate the PCB. */
-        TCP_EVENT_ERR(pcb->errf, pcb->callback_arg, ERR_RST);
-        tcp_pcb_remove(&tcp_active_pcbs, pcb);
-        memp_free(MEMP_TCP_PCB, pcb);
-      } else if (recv_flags & TF_CLOSED) {
+        TCP_EVENT_ERR(pcb->errf, pcb->callback_arg, ERR_RST);		//errf函数
+        tcp_pcb_remove(&tcp_active_pcbs, pcb);              		//删除控制块
+        memp_free(MEMP_TCP_PCB, pcb);                       		//释放控制块空间
+      } else if (recv_flags & TF_CLOSED) {                 		    //双方连接成功断开
         /* The connection has been closed and we will deallocate the
            PCB. */
         if (!(pcb->flags & TF_RXCLOSED)) {
@@ -322,13 +328,15 @@ tcp_input(struct pbuf *p, struct netif *inp)
              ensure the application doesn't continue using the PCB. */
           TCP_EVENT_ERR(pcb->errf, pcb->callback_arg, ERR_CLSD);
         }
-        tcp_pcb_remove(&tcp_active_pcbs, pcb);
-        memp_free(MEMP_TCP_PCB, pcb);
+        tcp_pcb_remove(&tcp_active_pcbs, pcb);              		//删除控制块
+        memp_free(MEMP_TCP_PCB, pcb);                       		//释放控制块空间
       } else {
         err = ERR_OK;
         /* If the application has registered a "sent" function to be
            called when new send buffer space is available, we call it
            now. */
+           
+		//若有数据被确认，则回调用户的sent函数
         if (pcb->acked > 0) {
           TCP_EVENT_SENT(pcb, pcb->acked, err);
           if (err == ERR_ABRT) {
@@ -336,7 +344,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
           }
         }
 
-        if (recv_data != NULL) {
+        if (recv_data != NULL) {			                   //如果有数据被接收到
           LWIP_ASSERT("pcb->refused_data == NULL", pcb->refused_data == NULL);
           if (pcb->flags & TF_RXCLOSED) {
             /* received data although already closed -> abort (send RST) to
@@ -347,21 +355,23 @@ tcp_input(struct pbuf *p, struct netif *inp)
           }
 
           /* Notify application that data has been received. */
-          TCP_EVENT_RECV(pcb, recv_data, ERR_OK, err);
+          TCP_EVENT_RECV(pcb, recv_data, ERR_OK, err);		  //回调用户的recv函数
           if (err == ERR_ABRT) {
             goto aborted;
           }
 
           /* If the upper layer can't receive this data, store it */
-          if (err != ERR_OK) {
-            pcb->refused_data = recv_data;
+          if (err != ERR_OK) {                   			  //如果用户处理数据失败
+            pcb->refused_data = recv_data;          		//将数据暂存在refused_data中
             LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: keep incoming packet, because pcb is \"full\"\n"));
           }
         }
 
         /* If a FIN segment was received, we call the callback
            function with a NULL buffer to indicate EOF. */
-        if (recv_flags & TF_GOT_FIN) {
+        //如果收到对方的FIN请求，则用一个NULL 的数据指针回调RECV.       
+		//通过这种方式用户程序可以知道对方的关闭请求
+        if (recv_flags & TF_GOT_FIN) {          			
           if (pcb->refused_data != NULL) {
             /* Delay this if we have refused data. */
             pcb->refused_data->flags |= PBUF_FLAG_TCP_FIN;
@@ -377,10 +387,10 @@ tcp_input(struct pbuf *p, struct netif *inp)
             }
           }
         }
-
+		//清空全局变量
         tcp_input_pcb = NULL;
         /* Try to send something out. */
-        tcp_output(pcb);
+        tcp_output(pcb);                            		//尝试输出报文
 #if TCP_INPUT_DEBUG
 #if TCP_DEBUG
         tcp_debug_print_state(pcb->state);
@@ -436,6 +446,8 @@ dropped:
  * @note the segment which arrived is saved in global variables, therefore only the pcb
  *       involved is passed as a parameter to this function
  */
+//函数功能 : LISTEN状态的控制块处理报文
+//函数说明 ：所有报文相关的信息已经被保存在前面所述的全局变量中
 static err_t
 tcp_listen_input(struct tcp_pcb_listen *pcb)
 {
@@ -453,9 +465,12 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     /* For incoming segments with the ACK flag set, respond with a
        RST. */
     LWIP_DEBUGF(TCP_RST_DEBUG, ("tcp_listen_input: ACK in LISTEN, sending reset\n"));
+	
+	//侦听到任何包含ACK的报文段，直接返回RST报文，SYN握手包
+	//不应该包含ACK
     tcp_rst(ackno, seqno + tcplen, ip_current_dest_addr(),
       ip_current_src_addr(), tcphdr->dest, tcphdr->src);
-  } else if (flags & TCP_SYN) {
+  } else if (flags & TCP_SYN) {	  //收到SYN握手报文
     LWIP_DEBUGF(TCP_DEBUG, ("TCP connection request %"U16_F" -> %"U16_F".\n", tcphdr->src, tcphdr->dest));
 #if TCP_LISTEN_BACKLOG
     if (pcb->accepts_pending >= pcb->backlog) {
@@ -463,29 +478,36 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
       return ERR_ABRT;
     }
 #endif /* TCP_LISTEN_BACKLOG */
-    npcb = tcp_alloc(pcb->prio);
+    npcb = tcp_alloc(pcb->prio);	//为新连接创建一个控制块
     /* If a new PCB could not be created (probably due to lack of memory),
        we don't do anything, but rely on the sender will retransmit the
        SYN at a time when we have more memory available. */
-    if (npcb == NULL) {
+    if (npcb == NULL) {     		//若创建失败，直接返回内存错误，不进行任何回复，
       LWIP_DEBUGF(TCP_DEBUG, ("tcp_listen_input: could not allocate PCB\n"));
       TCP_STATS_INC(tcp.memerr);
-      return ERR_MEM;
+      return ERR_MEM;        	  //对方超时后会重发SYN，那时可能就有内存空间了
     }
 #if TCP_LISTEN_BACKLOG
     pcb->accepts_pending++;
 #endif /* TCP_LISTEN_BACKLOG */
     /* Set up the new PCB. */
+	//设置新控制块中与连接相关的四个字段
+
     ip_addr_copy(npcb->local_ip, current_iphdr_dest);
     npcb->local_port = pcb->local_port;
     ip_addr_copy(npcb->remote_ip, current_iphdr_src);
     npcb->remote_port = tcphdr->src;
-    npcb->state = SYN_RCVD;
-    npcb->rcv_nxt = seqno + 1;
+
+	
+	//设置控制块中其余字段
+    npcb->state = SYN_RCVD;                    	//设置连接状态
+    npcb->rcv_nxt = seqno + 1;              	//设置下一个连接数据序号
     npcb->rcv_ann_right_edge = npcb->rcv_nxt;
     npcb->snd_wnd = tcphdr->wnd;
     npcb->snd_wnd_max = tcphdr->wnd;
-    npcb->ssthresh = npcb->snd_wnd;
+    npcb->ssthresh = npcb->snd_wnd;         	//设置发送窗口
+    
+	//snd_wll设置为seqno-1,在收到对方ACK(含窗口通告)后会迫使发送窗口更新
     npcb->snd_wl1 = seqno - 1;/* initialise to seqno-1 to force window update */
     npcb->callback_arg = pcb->callback_arg;
 #if LWIP_CALLBACK_API
@@ -495,23 +517,26 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     npcb->so_options = pcb->so_options & SOF_INHERITED;
     /* Register the new PCB so that we can begin receiving segments
        for it. */
-    TCP_REG_ACTIVE(npcb);
+    TCP_REG_ACTIVE(npcb);                	//将新控制块加入tcp_active_pcbs链表
 
+	//处理SYN包中选项字段，并设置控制块flags字段中与相应选项对应的位，
+	//目前只支持最大报文段选项和时间戳选项
     /* Parse any options in the SYN. */
     tcp_parseopt(npcb);
 #if TCP_CALCULATE_EFF_SEND_MSS
-    npcb->mss = tcp_eff_send_mss(npcb->mss, &(npcb->remote_ip));
+    npcb->mss = tcp_eff_send_mss(npcb->mss, &(npcb->remote_ip));   //设置最大报文段长度
 #endif /* TCP_CALCULATE_EFF_SEND_MSS */
 
     snmp_inc_tcppassiveopens();
 
+	//构造SYN+ACK握手报文，且包含MSS选项，通告自己的最大报文段大小
     /* Send a SYN|ACK together with the MSS option. */
     rc = tcp_enqueue_flags(npcb, TCP_SYN | TCP_ACK);
-    if (rc != ERR_OK) {
+    if (rc != ERR_OK) {                              		//如果发生错误则释放新控制块
       tcp_abandon(npcb, 0);
       return rc;
     }
-    return tcp_output(npcb);
+    return tcp_output(npcb);                            	//发送报文段
   }
   return ERR_OK;
 }
@@ -525,6 +550,10 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
  * @note the segment which arrived is saved in global variables, therefore only the pcb
  *       involved is passed as a parameter to this function
  */
+//函数功能 : TIME_WAIT状态的控制块处理报文段
+//函数说明 : 所有报文相关的信息已被保存在上节所述的全局变量中，在该状态下
+//应该忽略掉所有RST ACK FIN 置位的报文，且任何数据都会被删除，但需要向发送方
+//返回ACK报文
 static err_t
 tcp_timewait_input(struct tcp_pcb *pcb)
 {
@@ -533,28 +562,32 @@ tcp_timewait_input(struct tcp_pcb *pcb)
    * - first check sequence number - we skip that one in TIME_WAIT (always
    *   acceptable since we only send ACKs)
    * - second check the RST bit (... return) */
-  if (flags & TCP_RST)  {
+  if (flags & TCP_RST)  {	  //若报文的RST置位，直接返回
     return ERR_OK;
   }
   /* - fourth, check the SYN bit, */
-  if (flags & TCP_SYN) {
+  if (flags & TCP_SYN) {	  //若报文段包含了SYN握手信息
     /* If an incoming segment is not acceptable, an acknowledgment
        should be sent in reply */
+       
+	//且握手数据编号在接收窗口内，则向对方发送RST报文
     if (TCP_SEQ_BETWEEN(seqno, pcb->rcv_nxt, pcb->rcv_nxt+pcb->rcv_wnd)) {
       /* If the SYN is in the window it is an error, send a reset */
       tcp_rst(ackno, seqno + tcplen, ip_current_dest_addr(), ip_current_src_addr(),
         tcphdr->dest, tcphdr->src);
       return ERR_OK;
     }
-  } else if (flags & TCP_FIN) {
+  } else if (flags & TCP_FIN) {      	  //若报文段包含了FIN握手信息
     /* - eighth, check the FIN bit: Remain in the TIME-WAIT state.
          Restart the 2 MSL time-wait timeout.*/
+         
+	//服务2MSL等待时间，控制块重新等待2MSL
     pcb->tmr = tcp_ticks;
   }
 
-  if ((tcplen > 0))  {
+  if ((tcplen > 0))  {	                //对于有数据的报文，或者在接收窗口外的SYN报文
     /* Acknowledge data, FIN or out-of-window SYN */
-    pcb->flags |= TF_ACK_NOW;
+    pcb->flags |= TF_ACK_NOW;       	//发送一个ACK报文段
     return tcp_output(pcb);
   }
   return ERR_OK;
@@ -571,6 +604,11 @@ tcp_timewait_input(struct tcp_pcb *pcb)
  * @note the segment which arrived is saved in global variables, therefore only the pcb
  *       involved is passed as a parameter to this function
  */
+//函数功能 : 实现TCP状态机的函数，被tcp_input调用。在一些状态中tcp_receive
+//			被调用来接收数据。tcp_seg参数会被释放通过tcp_input调用者除非recv_data指针在pcb中被设置。
+//参数 :   pcb 该tcp_pcb指向一个到达的segment。
+//函数说明 : 所有报文相关的信息已经被保存在如前所述的全局变量中
+//注意 :  到达的segment被保存在全局变量中，因此只有涉及的pcb作为参数传递给函数。
 static err_t
 tcp_process(struct tcp_pcb *pcb)
 {
@@ -581,26 +619,30 @@ tcp_process(struct tcp_pcb *pcb)
   err = ERR_OK;
 
   /* Process incoming RST segments. */
+  
+  //如果收到的报文段RST标志置位，则判断该报文是否合法，若合法
+  //则复位当前的连接
   if (flags & TCP_RST) {
     /* First, determine if the reset is acceptable. */
-    if (pcb->state == SYN_SENT) {
-      if (ackno == pcb->snd_nxt) {
+    if (pcb->state == SYN_SENT) {         		//第一种情况，连接处于SYN_SENT状态
+      if (ackno == pcb->snd_nxt) {      	    //且报文中确认好与snd_nxt相等
         acceptable = 1;
       }
-    } else {
+    } else {                             		//第二种情况，其他状态下报文中的序列号在接收窗口内
       if (TCP_SEQ_BETWEEN(seqno, pcb->rcv_nxt, 
                           pcb->rcv_nxt+pcb->rcv_wnd)) {
         acceptable = 1;
       }
     }
 
+	//如果复位报文合法，则需要复位当前连接的控制块
     if (acceptable) {
       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_process: Connection RESET\n"));
       LWIP_ASSERT("tcp_input: pcb->state != CLOSED", pcb->state != CLOSED);
-      recv_flags |= TF_RESET;
+      recv_flags |= TF_RESET;                	  //设置recv_flags为复位，tcp_input将删除控制块
       pcb->flags &= ~TF_ACK_DELAY;
-      return ERR_RST;
-    } else {
+      return ERR_RST;                       	  //返回
+    } else {                                	  //复位报文不合法，直接返回，不对报文做处理
       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_process: unacceptable reset seqno %"U32_F" rcv_nxt %"U32_F"\n",
        seqno, pcb->rcv_nxt));
       LWIP_DEBUGF(TCP_DEBUG, ("tcp_process: unacceptable reset seqno %"U32_F" rcv_nxt %"U32_F"\n",
@@ -609,180 +651,191 @@ tcp_process(struct tcp_pcb *pcb)
     }
   }
 
+  //处理握手报文SYN，连接已经建立，但还收到对方的握手包，说明这
+  //可能是一个超时重发的握手包，直接向对方返回ACK即可
   if ((flags & TCP_SYN) && (pcb->state != SYN_SENT && pcb->state != SYN_RCVD)) { 
     /* Cope with new connection attempt after remote end crashed */
-    tcp_ack_now(pcb);
+    tcp_ack_now(pcb);   	//返回ACK
     return ERR_OK;
   }
   
   if ((pcb->flags & TF_RXCLOSED) == 0) {
     /* Update the PCB (in)activity timer unless rx is closed (see tcp_shutdown) */
-    pcb->tmr = tcp_ticks;
+    pcb->tmr = tcp_ticks;       	//复位控制块的活动计数器
   }
-  pcb->keep_cnt_sent = 0;
+  pcb->keep_cnt_sent = 0;           //保活报文计数器清0，后续讲解保活机制
 
-  tcp_parseopt(pcb);
+  tcp_parseopt(pcb);                //处理报文首部中的选项字段，设置控制块中的flags标志
 
+  //下面是实现TCP状态机的具体部分
   /* Do different things depending on the TCP state. */
   switch (pcb->state) {
-  case SYN_SENT:
+  case SYN_SENT:             	   //客户端发送SYN后，处于该状态等待服务器返回AYN+ACK
     LWIP_DEBUGF(TCP_INPUT_DEBUG, ("SYN-SENT: ackno %"U32_F" pcb->snd_nxt %"U32_F" unacked %"U32_F"\n", ackno,
      pcb->snd_nxt, ntohl(pcb->unacked->tcphdr->seqno)));
     /* received SYN ACK with expected sequence number? */
-    if ((flags & TCP_ACK) && (flags & TCP_SYN)
+    if ((flags & TCP_ACK) && (flags & TCP_SYN)  		//是AYN+ACK,且序列号正确
         && ackno == ntohl(pcb->unacked->tcphdr->seqno) + 1) {
-      pcb->snd_buf++;
-      pcb->rcv_nxt = seqno + 1;
-      pcb->rcv_ann_right_edge = pcb->rcv_nxt;
-      pcb->lastack = ackno;
-      pcb->snd_wnd = tcphdr->wnd;
+      pcb->snd_buf++;                	  //SYN被确认，该报文占用一个字节，可用空间加上1字节
+      pcb->rcv_nxt = seqno + 1;     	  //设置接收序号
+      pcb->rcv_ann_right_edge = pcb->rcv_nxt; 	  //初始化通告窗口的右边界值
+      pcb->lastack = ackno;         	          //被确认的最高序号
+      pcb->snd_wnd = tcphdr->wnd;           	  //发送窗口设置为接收窗口大小
       pcb->snd_wnd_max = tcphdr->wnd;
+	  
+	  //snd_wll设置为seqno-1,在收到对方
+	  //有效窗口通告后会迫使发送窗口更新
       pcb->snd_wl1 = seqno - 1; /* initialise to seqno - 1 to force window update */
-      pcb->state = ESTABLISHED;
+      pcb->state = ESTABLISHED;             	  //进入ESTABLISHED状态
 
 #if TCP_CALCULATE_EFF_SEND_MSS
-      pcb->mss = tcp_eff_send_mss(pcb->mss, &(pcb->remote_ip));
+      pcb->mss = tcp_eff_send_mss(pcb->mss, &(pcb->remote_ip));  //设置最大报文段
 #endif /* TCP_CALCULATE_EFF_SEND_MSS */
 
       /* Set ssthresh again after changing pcb->mss (already set in tcp_connect
        * but for the default value of pcb->mss) */
-      pcb->ssthresh = pcb->mss * 10;
+      pcb->ssthresh = pcb->mss * 10;      	  //重新设置了mss值，所以要重设ssthresh值
 
-      pcb->cwnd = ((pcb->cwnd == 1) ? (pcb->mss * 2) : pcb->mss);
+      pcb->cwnd = ((pcb->cwnd == 1) ? (pcb->mss * 2) : pcb->mss);	  //初始化阻塞窗口
       LWIP_ASSERT("pcb->snd_queuelen > 0", (pcb->snd_queuelen > 0));
-      --pcb->snd_queuelen;
+      --pcb->snd_queuelen;                 	  //SYN报文被确认，占用pbuf个数减1
       LWIP_DEBUGF(TCP_QLEN_DEBUG, ("tcp_process: SYN-SENT --queuelen %"U16_F"\n", (u16_t)pcb->snd_queuelen));
-      rseg = pcb->unacked;
+      rseg = pcb->unacked;               	  //在缓冲队列中删除SYN报文
       pcb->unacked = rseg->next;
       tcp_seg_free(rseg);
 
       /* If there's nothing left to acknowledge, stop the retransmit
          timer, otherwise reset it to start again */
-      if(pcb->unacked == NULL)
+      if(pcb->unacked == NULL)      		  //未确认队列为空，则停止重传计时器
         pcb->rtime = -1;
-      else {
+      else {                        		  //队列上有报文，则复位重传计时器、重传次数
         pcb->rtime = 0;
         pcb->nrtx = 0;
       }
 
       /* Call the user specified function to call when sucessfully
        * connected. */
-      TCP_EVENT_CONNECTED(pcb, ERR_OK, err);
+      TCP_EVENT_CONNECTED(pcb, ERR_OK, err);	  //回调用户的connected函数
       if (err == ERR_ABRT) {
         return ERR_ABRT;
       }
-      tcp_ack_now(pcb);
+      tcp_ack_now(pcb);              	  //向服务器返回ACK,三次握手结束
     }
     /* received ACK? possibly a half-open connection */
-    else if (flags & TCP_ACK) {
+    else if (flags & TCP_ACK) { 		  //只收到对方的ACK却没有SYN，则向对方返回RST
       /* send a RST to bring the other side in a non-synchronized state. */
-      tcp_rst(ackno, seqno + tcplen, ip_current_dest_addr(), ip_current_src_addr(),
+      tcp_rst(ackno, seqno + tcplen, ip_current_dest_addr(), ip_current_src_addr(),		  //不支持半打开状态
         tcphdr->dest, tcphdr->src);
     }
     break;
-  case SYN_RCVD:
-    if (flags & TCP_ACK) {
+  case SYN_RCVD:                   	  //服务器在发送完SYN+ACK后，将处于该状态
+    if (flags & TCP_ACK) {     		  //收到ACK报文，三次握手的最后一个报文
       /* expected ACK number? */
-      if (TCP_SEQ_BETWEEN(ackno, pcb->lastack+1, pcb->snd_nxt)) {
+      if (TCP_SEQ_BETWEEN(ackno, pcb->lastack+1, pcb->snd_nxt)) {		  //确认号合法
         u16_t old_cwnd;
-        pcb->state = ESTABLISHED;
+        pcb->state = ESTABLISHED;  		//进入ESTABLISHED状态
         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection established %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
 #if LWIP_CALLBACK_API
         LWIP_ASSERT("pcb->accept != NULL", pcb->accept != NULL);
 #endif
         /* Call the accept function. */
-        TCP_EVENT_ACCEPT(pcb, ERR_OK, err);
-        if (err != ERR_OK) {
+        TCP_EVENT_ACCEPT(pcb, ERR_OK, err);		//回调用户的accept函数
+        if (err != ERR_OK) {			//如果accept回调函数执行错误，则关闭当前连接
           /* If the accept function returns with an error, we abort
            * the connection. */
           /* Already aborted? */
           if (err != ERR_ABRT) {
             tcp_abort(pcb);
           }
-          return ERR_ABRT;
+          return ERR_ABRT;        		  //返回错误
         }
-        old_cwnd = pcb->cwnd;
+        old_cwnd = pcb->cwnd;       		//保存旧的阻塞窗口
         /* If there was any data contained within this ACK,
          * we'd better pass it on to the application as well. */
-        tcp_receive(pcb);
+        tcp_receive(pcb);            	//调用函数处理报文中的数据
 
         /* Prevent ACK for SYN to generate a sent event */
-        if (pcb->acked != 0) {
-          pcb->acked--;
+        if (pcb->acked != 0) { 			//如果本地有未确认数据报被报文中的ACK确认
+          pcb->acked--;       		    //调整确认的字节数，因为SYN报文占用了一个字节
         }
 
-        pcb->cwnd = ((old_cwnd == 1) ? (pcb->mss * 2) : pcb->mss);
+        pcb->cwnd = ((old_cwnd == 1) ? (pcb->mss * 2) : pcb->mss);		//重新设置阻塞窗口
 
-        if (recv_flags & TF_GOT_FIN) {
-          tcp_ack_now(pcb);
-          pcb->state = CLOSE_WAIT;
+        if (recv_flags & TF_GOT_FIN) { 			//tcp_receive处理时设置了关闭连接标志
+          tcp_ack_now(pcb);             		//响应对方的FIN握手标志
+          pcb->state = CLOSE_WAIT;    		    //进入CLOSE_WAIT状态
         }
-      } else {
+      } else {		  //不合法ACK序号则返回一个复位报文
         /* incorrect ACK number, send RST */
         tcp_rst(ackno, seqno + tcplen, ip_current_dest_addr(), ip_current_src_addr(),
                 tcphdr->dest, tcphdr->src);
       }
     } else if ((flags & TCP_SYN) && (seqno == pcb->rcv_nxt - 1)) {
-      /* Looks like another copy of the SYN - retransmit our SYN-ACK */
+    
+	//收到对方重复的SYN握手，说明SYN+ACK丢失，这里重传SYN+ACK  
+    /* Looks like another copy of the SYN - retransmit our SYN-ACK */
       tcp_rexmit(pcb);
     }
     break;
   case CLOSE_WAIT:
+	  //服务器处于半关闭状态，不可能再接收到来自客户端的报文，
+	  //服务器在此状态下会一直等待上层应用执行关闭tcp_close,
+	  //并将状态变为LAST_ACK
     /* FALLTHROUGH */
-  case ESTABLISHED:
-    tcp_receive(pcb);
-    if (recv_flags & TF_GOT_FIN) { /* passive close */
-      tcp_ack_now(pcb);
-      pcb->state = CLOSE_WAIT;
+  case ESTABLISHED:         	          //连接双方都处于稳定状态
+    tcp_receive(pcb);       	          //调用函数处理报文中的数据
+    if (recv_flags & TF_GOT_FIN) { /* passive close */		//tcp_receive处理时设置了关闭连接标志
+      tcp_ack_now(pcb);             	  //响应对方的FIN握手标志
+      pcb->state = CLOSE_WAIT;      	  //进入CLOSE_WAIT状态
     }
     break;
-  case FIN_WAIT_1:
-    tcp_receive(pcb);
-    if (recv_flags & TF_GOT_FIN) {
-      if ((flags & TCP_ACK) && (ackno == pcb->snd_nxt)) {
+  case FIN_WAIT_1:                   	  //上层应用调用tcp_close关闭连接，发送FIN后处于该状态
+    tcp_receive(pcb);                     //调用函数处理报文中的数据
+    if (recv_flags & TF_GOT_FIN) {  	  //收到对方的FIN握手
+      if ((flags & TCP_ACK) && (ackno == pcb->snd_nxt)) {		  //且包含有效的ACK
         LWIP_DEBUGF(TCP_DEBUG,
           ("TCP connection closed: FIN_WAIT_1 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
-        tcp_ack_now(pcb);
-        tcp_pcb_purge(pcb);
-        TCP_RMV_ACTIVE(pcb);
-        pcb->state = TIME_WAIT;
-        TCP_REG(&tcp_tw_pcbs, pcb);
-      } else {
-        tcp_ack_now(pcb);
-        pcb->state = CLOSING;
+        tcp_ack_now(pcb);         		 //发送ACK
+        tcp_pcb_purge(pcb);       		 //清除该连接中的所有现存数据
+        TCP_RMV_ACTIVE(pcb);       		 //链表中删除
+        pcb->state = TIME_WAIT;  		 //置为TIME_WAIT状态
+        TCP_REG(&tcp_tw_pcbs, pcb);		 //加入tcp_tw_pcbs链表
+      } else {                   		 //双方同时执行关闭操作
+        tcp_ack_now(pcb);       		 //返回ACK
+        pcb->state = CLOSING;     		 //进入CLOSING状态
       }
-    } else if ((flags & TCP_ACK) && (ackno == pcb->snd_nxt)) {
-      pcb->state = FIN_WAIT_2;
+    } else if ((flags & TCP_ACK) && (ackno == pcb->snd_nxt)) {		//只收到有效ACK
+      pcb->state = FIN_WAIT_2;       	  //进入FIN_WAIT_2状态
     }
     break;
-  case FIN_WAIT_2:
-    tcp_receive(pcb);
-    if (recv_flags & TF_GOT_FIN) {
+  case FIN_WAIT_2:                  	  //主动关闭，发送FIN握手且接收到ACK后处于该状态
+    tcp_receive(pcb);                     //调用函数处理报文中的数据
+    if (recv_flags & TF_GOT_FIN) {        //收到对方的FIN握手  
       LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: FIN_WAIT_2 %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
-      tcp_ack_now(pcb);
-      tcp_pcb_purge(pcb);
-      TCP_RMV_ACTIVE(pcb);
-      pcb->state = TIME_WAIT;
-      TCP_REG(&tcp_tw_pcbs, pcb);
+      tcp_ack_now(pcb);             	  //发送ACK
+      tcp_pcb_purge(pcb);            	  //清除该连接中的所有现存数据
+      TCP_RMV_ACTIVE(pcb);           	  //从tcp_active_pcbs链表中删除
+      pcb->state = TIME_WAIT;       	  //置为TIME_WAIT状态
+      TCP_REG(&tcp_tw_pcbs, pcb);    	  //加入tcp_tw_pcbs链表
     }
     break;
-  case CLOSING:
-    tcp_receive(pcb);
-    if (flags & TCP_ACK && ackno == pcb->snd_nxt) {
+  case CLOSING:                      	  //双方同时执行主动关闭，处于该状态
+    tcp_receive(pcb);                     //调用函数处理报文中的数据
+    if (flags & TCP_ACK && ackno == pcb->snd_nxt) {		//收到有效ACK
       LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: CLOSING %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
-      tcp_pcb_purge(pcb);
-      TCP_RMV_ACTIVE(pcb);
-      pcb->state = TIME_WAIT;
-      TCP_REG(&tcp_tw_pcbs, pcb);
+      tcp_pcb_purge(pcb);            	  //清除该连接中的所有现存数据
+      TCP_RMV_ACTIVE(pcb);            	  //从tcp_active_pcbs链表中删除
+      pcb->state = TIME_WAIT;         	  //置为TIME_WAIT状态
+      TCP_REG(&tcp_tw_pcbs, pcb);     	  //加入tcp_tw_pcbs链表
     }
     break;
-  case LAST_ACK:
-    tcp_receive(pcb);
-    if (flags & TCP_ACK && ackno == pcb->snd_nxt) {
+  case LAST_ACK:                     	  //服务器在执行被动关闭时，发送完FIN,等待ACK返回
+    tcp_receive(pcb);                     //调用函数处理报文中的数据
+    if (flags & TCP_ACK && ackno == pcb->snd_nxt) {		//收到有效ACK
       LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: LAST_ACK %"U16_F" -> %"U16_F".\n", inseg.tcphdr->src, inseg.tcphdr->dest));
       /* bugfix #21699: don't set pcb->state to CLOSED here or we risk leaking segments */
-      recv_flags |= TF_CLOSED;
-    }
+      recv_flags |= TF_CLOSED;            //设置recv_flags为TF_CLOSED,由tcp_input函数
+    }                                     //对该控制块进行释放和清除工作
     break;
   default:
     break;
@@ -843,6 +896,12 @@ tcp_oos_insert_segment(struct tcp_seg *cseg, struct tcp_seg *next)
  *
  * Called from tcp_process().
  */
+ 
+//被tcp_process调用，检查给定的段是否是未完成数据的ACK，如果这样可以释放缓冲数据的内存。
+//接下来，将段放在任何接收队列上(pcb->recved or pcb->ooseq). 
+//如果该段是缓冲的，则pbuf_ref引用pbuf，以便在从缓冲区中删除之前不会释放它。
+//如果传入段构成用于RTT估计的段的ACK，则也在此估计RTT。
+
 static void
 tcp_receive(struct tcp_pcb *pcb)
 {
